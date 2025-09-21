@@ -1,0 +1,36 @@
+# Node.js 18 Alpine ベースイメージ（テスト用）
+FROM node:18-alpine
+
+# 作業ディレクトリを設定
+WORKDIR /app
+
+# パッケージファイルをコピー
+COPY package*.json ./
+
+# 依存関係をインストール（開発依存関係も含む）
+RUN npm ci
+
+# アプリケーションコードをコピー
+COPY . .
+
+# 非rootユーザーを作成
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+
+# ファイルの所有者を変更
+RUN chown -R nextjs:nodejs /app
+USER nextjs
+
+# ポートを公開
+EXPOSE 3000
+
+# 環境変数を設定（テスト用）
+ENV NODE_ENV=development
+ENV NEXT_PUBLIC_API_URL=http://localhost:8001
+
+# ヘルスチェック
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000 || exit 1
+
+# 開発サーバーを起動
+CMD ["npm", "run", "dev"]

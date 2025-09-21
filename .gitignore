@@ -1,0 +1,100 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+backend/venv/
+frontend/venv/
+.venv/
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.staging
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Database
+*.db
+*.sqlite3
+test.db
+
+# Logs
+*.log
+logs/
+log/
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# OS
+.DS_Store
+Thumbs.db
+*.Zone.Identifier
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Alembic
+alembic/versions/*.py
+!alembic/versions/__init__.py
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Test files
+test_*.py
+*_test.py
+analyze_*.py
+activity_*.csv
+
+# Documentation (keep only main ones)
+!README.md
+!DAILYLOG.md
+!PRODUCTION_DEPLOYMENT.md
+!CSV_ENCODING_COMPLETE_SOLUTION.md
+!production.env.template
+!deploy.sh
+!setup.sh
+
+# Dependencies
+/node_modules
+/frontend-react/node_modules

@@ -1,0 +1,58 @@
+[
+  {
+    "test": "Health Check",
+    "success": true,
+    "message": "Status: healthy",
+    "response": null,
+    "timestamp": "2025-09-20T16:35:49.081985"
+  },
+  {
+    "test": "API Docs",
+    "success": true,
+    "message": "Swagger UI accessible",
+    "response": null,
+    "timestamp": "2025-09-20T16:35:49.085641"
+  },
+  {
+    "test": "User Login",
+    "success": true,
+    "message": "Login successful, token received",
+    "response": null,
+    "timestamp": "2025-09-20T16:35:49.409557"
+  },
+  {
+    "test": "Unauthorized Access",
+    "success": true,
+    "message": "Correctly rejected unauthorized access",
+    "response": null,
+    "timestamp": "2025-09-20T16:35:49.414266"
+  },
+  {
+    "test": "Get Current User",
+    "success": true,
+    "message": "User: None (test@example.com)",
+    "response": null,
+    "timestamp": "2025-09-20T16:35:49.422212"
+  },
+  {
+    "test": "Workouts Endpoint",
+    "success": true,
+    "message": "Retrieved 0 workouts",
+    "response": null,
+    "timestamp": "2025-09-20T16:35:49.431406"
+  },
+  {
+    "test": "Races Endpoint",
+    "success": true,
+    "message": "Retrieved 0 races",
+    "response": null,
+    "timestamp": "2025-09-20T16:35:49.440895"
+  },
+  {
+    "test": "Dashboard Endpoint",
+    "success": true,
+    "message": "Dashboard data retrieved",
+    "response": null,
+    "timestamp": "2025-09-20T16:35:49.456282"
+  }
+]
