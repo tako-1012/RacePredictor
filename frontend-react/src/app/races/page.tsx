@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient, handleApiError } from '@/lib/api'
-import { Race, PaginationParams } from '@/types'
+import { Race, RaceType, PaginationParams } from '@/types'
 import { RaceList } from './components/RaceList'
 import { LoadingSpinner } from '@/components/UI/LoadingSpinner'
 import { Toast } from '@/components/UI/Toast'
@@ -13,12 +13,13 @@ export default function RacesPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth()
   const router = useRouter()
   const [races, setRaces] = useState<Race[]>([])
+  const [raceTypes, setRaceTypes] = useState<RaceType[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pagination, setPagination] = useState<PaginationParams>({
     page: 1,
     limit: 20,
-    sort_by: 'date',
+    sort_by: 'race_date',
     sort_order: 'desc'
   })
   const [totalPages, setTotalPages] = useState(1)
@@ -34,6 +35,7 @@ export default function RacesPage() {
   useEffect(() => {
     if (isAuthenticated) {
       loadRaces()
+      loadRaceTypes()
     }
   }, [isAuthenticated, pagination])
 
@@ -49,6 +51,15 @@ export default function RacesPage() {
       setError(apiError.message)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadRaceTypes = async () => {
+    try {
+      const types = await apiClient.getRaceTypes()
+      setRaceTypes(types)
+    } catch (err) {
+      console.error('Failed to load race types:', err)
     }
   }
 
@@ -71,6 +82,14 @@ export default function RacesPage() {
 
   const handleSortChange = (sortBy: string, sortOrder: 'asc' | 'desc') => {
     setPagination(prev => ({ ...prev, sort_by: sortBy, sort_order: sortOrder, page: 1 }))
+  }
+
+  const handleFilterChange = (filters: any) => {
+    setPagination(prev => ({ 
+      ...prev, 
+      ...filters,
+      page: 1 
+    }))
   }
 
   if (authLoading || isLoading) {
@@ -111,11 +130,14 @@ export default function RacesPage() {
 
         <RaceList
           races={races}
+          raceTypes={raceTypes}
           onDelete={handleDelete}
           onPageChange={handlePageChange}
           onSortChange={handleSortChange}
+          onFilterChange={handleFilterChange}
           currentPage={pagination.page}
           totalPages={totalPages}
+          pagination={pagination}
         />
 
         {toast && (

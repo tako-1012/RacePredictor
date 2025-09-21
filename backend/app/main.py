@@ -13,7 +13,7 @@ from app.core.database import engine, Base, get_db
 from app.core.logging_config import setup_logging
 from app.core.middleware import rate_limit_middleware, SecurityHeadersMiddleware
 from app.core.response import add_request_id_middleware, standardize_response_middleware, log_api_call
-from app.api import auth, workouts, workout_types, predictions, races, dashboard
+from app.api import auth, workouts, workout_types, predictions, races, race_types, dashboard
 from app.core.exceptions import RacePredictorException, ValidationError, DatabaseError
 
 # ログ設定
@@ -136,6 +136,7 @@ app.include_router(workouts.router, prefix="/api/workouts", tags=["workouts"])
 app.include_router(workout_types.router, prefix="/api/workout-types", tags=["workout-types"])
 app.include_router(predictions.router, prefix="/api/predictions", tags=["predictions"])
 app.include_router(races.router, prefix="/api/races", tags=["races"])
+app.include_router(race_types.router, prefix="/api/race-types", tags=["race-types"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])
 
 @app.get("/")

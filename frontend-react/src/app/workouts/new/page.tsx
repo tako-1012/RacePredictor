@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { apiClient, handleApiError } from '@/lib/api'
 import { WorkoutType, WorkoutFormData } from '@/types'
-import { WorkoutForm } from '../components/WorkoutForm'
+import { DetailedWorkoutForm } from '../components/DetailedWorkoutForm'
 import { LoadingSpinner } from '@/components/UI/LoadingSpinner'
 import { Toast } from '@/components/UI/Toast'
 
@@ -92,8 +92,8 @@ export default function NewWorkoutPage() {
           <p className="mt-2 text-gray-600">練習の詳細を入力してください</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <WorkoutForm
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <DetailedWorkoutForm
             workoutTypes={workoutTypes}
             onSubmit={handleSubmit}
             onCancel={handleCancel}

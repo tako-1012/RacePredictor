@@ -124,6 +124,7 @@ export default function WorkoutsPage() {
           currentPage={pagination.page}
           totalPages={totalPages}
           filter={filter}
+          pagination={pagination}
         />
 
         {toast && (

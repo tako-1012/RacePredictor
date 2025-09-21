@@ -15,6 +15,7 @@ interface WorkoutListProps {
   currentPage: number
   totalPages: number
   filter: WorkoutFilter
+  pagination: any
 }
 
 export function WorkoutList({
@@ -25,7 +26,8 @@ export function WorkoutList({
   onSortChange,
   currentPage,
   totalPages,
-  filter
+  filter,
+  pagination
 }: WorkoutListProps) {
   const router = useRouter()
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -43,8 +45,8 @@ export function WorkoutList({
   }
 
   const handleSort = (sortBy: string) => {
-    const currentSort = filter.sort_by || 'date'
-    const currentOrder = filter.sort_order || 'desc'
+    const currentSort = pagination.sort_by || 'date'
+    const currentOrder = pagination.sort_order || 'desc'
     
     if (currentSort === sortBy) {
       onSortChange(sortBy, currentOrder === 'asc' ? 'desc' : 'asc')
@@ -54,8 +56,8 @@ export function WorkoutList({
   }
 
   const getSortIcon = (sortBy: string) => {
-    const currentSort = filter.sort_by || 'date'
-    const currentOrder = filter.sort_order || 'desc'
+    const currentSort = pagination.sort_by || 'date'
+    const currentOrder = pagination.sort_order || 'desc'
     
     if (currentSort !== sortBy) return '↕️'
     return currentOrder === 'asc' ? '↑' : '↓'
@@ -127,7 +129,8 @@ export function WorkoutList({
 
       {/* 練習記録一覧 */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* デスクトップ表示 */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -225,6 +228,70 @@ export function WorkoutList({
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* モバイル表示 */}
+        <div className="md:hidden">
+          {workouts.map((workout) => (
+            <div key={workout.id} className="border-b border-gray-200 p-4">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900">
+                    {new Date(workout.date).toLocaleDateString('ja-JP')}
+                  </h3>
+                  <p className="text-sm text-gray-600">{workout.workout_type?.name || '不明'}</p>
+                </div>
+                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                  workout.intensity >= 8 ? 'bg-red-100 text-red-800' :
+                  workout.intensity >= 6 ? 'bg-orange-100 text-orange-800' :
+                  workout.intensity >= 4 ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-green-100 text-green-800'
+                }`}>
+                  {workout.intensity}/10
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mb-3">
+                <div>
+                  <p className="text-xs text-gray-500">距離</p>
+                  <p className="text-sm font-medium text-gray-900">{formatDistance(workout.distance_meters)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">タイム</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {workout.times_seconds.length > 0 ? formatTime(workout.times_seconds.reduce((a, b) => a + b, 0)) : '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">ペース</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {workout.avg_pace_seconds ? formatPace(workout.avg_pace_seconds) : '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">区間数</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {workout.times_seconds.length > 0 ? `${workout.times_seconds.length}分割` : '-'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => router.push(`/workouts/${workout.id}`)}
+                  className="flex-1 px-3 py-2 text-sm text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50"
+                >
+                  詳細
+                </button>
+                <button
+                  onClick={() => handleDelete(workout.id)}
+                  className="flex-1 px-3 py-2 text-sm text-red-600 border border-red-600 rounded-md hover:bg-red-50"
+                >
+                  削除
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
 
         {workouts.length === 0 && (
