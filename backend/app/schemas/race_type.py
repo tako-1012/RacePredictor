@@ -5,7 +5,7 @@ from datetime import datetime
 
 class RaceTypeBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=50)
-    category: str = Field(..., regex="^(track|road|relay)$")
+    category: str = Field(..., pattern="^(track|road|relay)$")
     default_distance_meters: int = Field(..., ge=50, le=100000)
     is_customizable: bool = True
     min_distance_meters: int = Field(default=50, ge=50, le=100000)
@@ -19,7 +19,7 @@ class RaceTypeCreate(RaceTypeBase):
 
 class RaceTypeUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=50)
-    category: Optional[str] = Field(None, regex="^(track|road|relay)$")
+    category: Optional[str] = Field(None, pattern="^(track|road|relay)$")
     default_distance_meters: Optional[int] = Field(None, ge=50, le=100000)
     is_customizable: Optional[bool] = None
     min_distance_meters: Optional[int] = Field(None, ge=50, le=100000)

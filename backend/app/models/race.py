@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Date, DateTime, Float, Integer, UUID, ForeignKey, Boolean, JSON
+from sqlalchemy import Column, String, Date, DateTime, Float, Integer, ForeignKey, Boolean, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
@@ -8,7 +8,7 @@ from app.core.database import Base
 class RaceType(Base):
     __tablename__ = "race_types"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String(50), nullable=False)
     category = Column(String(20), nullable=False)  # 'track', 'road', 'relay'
     default_distance_meters = Column(Integer, nullable=False)
@@ -17,7 +17,7 @@ class RaceType(Base):
     max_distance_meters = Column(Integer, default=100000)
     description = Column(String(500))
     is_default = Column(Boolean, default=False)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -28,11 +28,11 @@ class RaceType(Base):
 class RaceResult(Base):
     __tablename__ = "race_results"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     race_date = Column(Date, nullable=False)
     race_name = Column(String(100), nullable=False)
-    race_type_id = Column(UUID(as_uuid=True), ForeignKey("race_types.id"), nullable=False)
+    race_type_id = Column(String(36), ForeignKey("race_types.id"), nullable=False)
     distance_meters = Column(Integer, nullable=False)
     time_seconds = Column(Float, nullable=False)
     pace_seconds = Column(Float, nullable=False)
@@ -54,7 +54,7 @@ class RaceResult(Base):
     course_type = Column(String(50))
     strategy_notes = Column(String(1000))
     
-    prediction_id = Column(UUID(as_uuid=True), ForeignKey("predictions.id"), nullable=True)
+    prediction_id = Column(String(36), ForeignKey("predictions.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

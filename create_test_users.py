@@ -1,94 +1,61 @@
 #!/usr/bin/env python3
 """
-テスト用ユーザー作成スクリプト
-手動テスト用のサンプルユーザーを作成します
+テストユーザー作成スクリプト
 """
-
-import requests
-import json
 import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
 
-# テスト環境のAPI URL
-API_BASE_URL = "http://localhost:8001"
+from backend.app.core.database import get_db
+from backend.app.models.user import User
+from backend.app.core.security import get_password_hash
 
-def create_test_user(email, password, name="テストユーザー"):
+
+def create_test_users():
     """テストユーザーを作成"""
-    url = f"{API_BASE_URL}/api/auth/register"
-    data = {
-        "email": email,
-        "password": password,
-        "confirm_password": password,
-        "name": name
-    }
+    db = next(get_db())
     
-    try:
-        response = requests.post(url, json=data)
-        if response.status_code == 201:
-            print(f"✅ ユーザー作成成功: {email}")
-            return response.json()
-        else:
-            print(f"❌ ユーザー作成失敗: {email} - {response.text}")
-            return None
-    except requests.exceptions.ConnectionError:
-        print("❌ APIサーバーに接続できません。サーバーが起動しているか確認してください。")
-        return None
-    except Exception as e:
-        print(f"❌ エラー: {e}")
-        return None
-
-def login_user(email, password):
-    """ユーザーログイン"""
-    url = f"{API_BASE_URL}/api/auth/login"
-    data = {
-        "email": email,
-        "password": password
-    }
-    
-    try:
-        response = requests.post(url, json=data)
-        if response.status_code == 200:
-            print(f"✅ ログイン成功: {email}")
-            return response.json()
-        else:
-            print(f"❌ ログイン失敗: {email} - {response.text}")
-            return None
-    except Exception as e:
-        print(f"❌ ログインエラー: {e}")
-        return None
-
-def main():
-    print("🧪 テスト用ユーザー作成スクリプト")
-    print("=" * 50)
-    
-    # テストユーザーの定義
     test_users = [
-        {"email": "test@example.com", "password": "testpassword123", "name": "テストユーザー1"},
-        {"email": "runner@example.com", "password": "runner123", "name": "ランナーテスト"},
-        {"email": "admin@example.com", "password": "admin123", "name": "管理者テスト"},
+        {
+            "email": "test1@example.com",
+            "name": "テストユーザー1",
+            "password": "testpassword123"
+        },
+        {
+            "email": "test2@example.com", 
+            "name": "テストユーザー2",
+            "password": "testpassword123"
+        },
+        {
+            "email": "admin@example.com",
+            "name": "管理者ユーザー",
+            "password": "adminpassword123"
+        }
     ]
     
-    created_users = []
+    for user_data in test_users:
+        # 既存ユーザーをチェック
+        existing_user = db.query(User).filter(User.email == user_data["email"]).first()
+        if existing_user:
+            print(f"ユーザー {user_data['email']} は既に存在します")
+            continue
+        
+        # 新規ユーザー作成
+        user = User(
+            email=user_data["email"],
+            name=user_data["name"],
+            password_hash=get_password_hash(user_data["password"]),
+            birth_date='1990-01-01',
+            gender='other',
+            user_type='runner'
+        )
+        
+        db.add(user)
+        db.commit()
+        print(f"テストユーザー {user_data['email']} を作成しました")
     
-    for user in test_users:
-        print(f"\n📝 ユーザー作成中: {user['email']}")
-        result = create_test_user(user["email"], user["password"], user["name"])
-        if result:
-            created_users.append(user)
-    
-    print(f"\n🎉 作成完了: {len(created_users)}/{len(test_users)} ユーザー")
-    
-    if created_users:
-        print("\n📋 作成されたユーザー情報:")
-        for user in created_users:
-            print(f"   Email: {user['email']}")
-            print(f"   Password: {user['password']}")
-            print(f"   Name: {user['name']}")
-            print("   ---")
-    
-    print("\n🔧 次のステップ:")
-    print("1. フロントエンド (http://localhost:3001) にアクセス")
-    print("2. 上記のユーザー情報でログイン")
-    print("3. 手動テストを実行")
+    print("テストユーザー作成完了")
+
 
 if __name__ == "__main__":
-    main()
+    create_test_users()

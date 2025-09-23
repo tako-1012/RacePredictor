@@ -4,7 +4,7 @@ from sqlalchemy import or_
 from typing import List
 from uuid import UUID
 from app.core.database import get_db
-from app.core.auth import get_current_user
+from app.core.security import get_current_user_from_token
 from app.models.race import RaceType
 from app.schemas.race_type import RaceTypeCreate, RaceTypeUpdate, RaceTypeResponse
 
@@ -13,7 +13,7 @@ router = APIRouter()
 
 @router.get("/", response_model=List[RaceTypeResponse])
 async def get_race_types(
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """レース種目一覧取得（デフォルト + ユーザーカスタム）"""
@@ -42,7 +42,7 @@ async def get_race_types(
 @router.post("/", response_model=RaceTypeResponse, status_code=status.HTTP_201_CREATED)
 async def create_race_type(
     race_type_data: RaceTypeCreate,
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """カスタムレース種目作成"""
@@ -99,7 +99,7 @@ async def create_race_type(
 async def update_race_type(
     race_type_id: str,
     race_type_data: RaceTypeUpdate,
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """カスタムレース種目更新"""
@@ -153,7 +153,7 @@ async def update_race_type(
 @router.delete("/{race_type_id}")
 async def delete_race_type(
     race_type_id: str,
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """カスタムレース種目削除"""

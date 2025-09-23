@@ -5,7 +5,7 @@ from typing import List
 from datetime import date
 from uuid import UUID
 from app.core.database import get_db
-from app.core.auth import get_current_user
+from app.core.security import get_current_user_from_token
 from app.models.prediction import Prediction
 from app.schemas.prediction import PredictionCreate, PredictionResponse, PredictionResult
 from app.services.prediction_engine import PredictionEngine
@@ -16,7 +16,7 @@ router = APIRouter()
 @router.post("/calculate", response_model=PredictionResult)
 async def calculate_prediction(
     prediction_data: PredictionCreate,
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """予測計算"""
@@ -68,7 +68,7 @@ async def calculate_prediction(
 
 @router.get("/", response_model=List[PredictionResponse])
 async def get_predictions(
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """ユーザーの予測履歴取得"""

@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     
     # データベース設定
     database_url: str = "sqlite:///./test.db"
+    postgres_db: Optional[str] = None
+    postgres_user: Optional[str] = None
+    db_password: Optional[str] = None
     max_connections: int = 100
     pool_timeout: int = 30
     
@@ -60,10 +63,15 @@ class Settings(BaseSettings):
     # 外部API設定
     external_api_timeout: int = 30
     external_api_retries: int = 3
+    
+    # テスト設定
+    test_mode: Optional[bool] = None
+    skip_auth: Optional[bool] = None
 
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # 追加の環境変数を無視
 
 
 # 環境変数から設定を読み込み

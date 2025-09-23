@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Date, DateTime, Float, UUID, ForeignKey, JSON
+from sqlalchemy import Column, String, Date, DateTime, Float, ForeignKey, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
@@ -8,8 +8,8 @@ from app.core.database import Base
 class Prediction(Base):
     __tablename__ = "predictions"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     prediction_date = Column(Date, nullable=False)
     target_event = Column(String(20), nullable=False)
     predicted_time_seconds = Column(Float, nullable=False)

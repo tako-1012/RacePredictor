@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
-import { apiClient, handleApiError } from '@/lib/api'
+import { api, handleApiError } from '@/lib/api'
 import { Race, RaceType, PaginationParams } from '@/types'
 import { RaceList } from './components/RaceList'
 import { LoadingSpinner } from '@/components/UI/LoadingSpinner'
@@ -43,9 +43,15 @@ export default function RacesPage() {
     try {
       setIsLoading(true)
       setError(null)
-      const response = await apiClient.getRaces(pagination)
-      setRaces(response.data)
-      setTotalPages(response.pagination.total_pages)
+      const response = await api.races.getAll(pagination)
+      setRaces(response.data.items || response.data)
+      
+      // ページネーション情報の設定
+      if (response.data.pagination) {
+        setTotalPages(response.data.pagination.total_pages || 1)
+      } else {
+        setTotalPages(1)
+      }
     } catch (err) {
       const apiError = handleApiError(err)
       setError(apiError.message)
@@ -56,8 +62,8 @@ export default function RacesPage() {
 
   const loadRaceTypes = async () => {
     try {
-      const types = await apiClient.getRaceTypes()
-      setRaceTypes(types)
+      const response = await api.raceTypes.getAll()
+      setRaceTypes(response.data)
     } catch (err) {
       console.error('Failed to load race types:', err)
     }
@@ -67,7 +73,7 @@ export default function RacesPage() {
     if (!confirm('このレース結果を削除しますか？')) return
 
     try {
-      await apiClient.deleteRace(id)
+      await api.races.delete(id)
       setRaces(races.filter(r => r.id !== id))
       setToast({ message: 'レース結果を削除しました', type: 'success' })
     } catch (err) {

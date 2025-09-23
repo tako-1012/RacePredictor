@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
-import { apiClient, handleApiError } from '@/lib/api'
+import { api, handleApiError } from '@/lib/api'
 import { DashboardStats } from '@/types'
 import { StatsCards } from './components/StatsCards'
 import { ActivityChart } from './components/ActivityChart'
@@ -25,8 +25,8 @@ export default function DashboardPage() {
     try {
       setIsLoading(true)
       setError(null)
-      const dashboardStats = await apiClient.getDashboardStats()
-      setStats(dashboardStats)
+      const response = await api.dashboard.getStats()
+      setStats(response.data)
     } catch (err) {
       const apiError = handleApiError(err)
       setError(apiError.message)

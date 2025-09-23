@@ -5,7 +5,7 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import date
 from app.core.database import get_db
-from app.core.auth import get_current_user
+from app.core.security import get_current_user_from_token
 from app.models.race import RaceResult, RaceType
 from app.models.prediction import Prediction
 from app.schemas.race import RaceResultCreate, RaceResultUpdate, RaceResultResponse
@@ -17,7 +17,7 @@ router = APIRouter()
 @router.post("/", response_model=RaceResultResponse, status_code=status.HTTP_201_CREATED)
 async def create_race_result(
     race_data: RaceResultCreate,
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """レース結果作成"""
@@ -105,7 +105,7 @@ async def get_race_results(
     race_type_id: Optional[str] = Query(None),
     is_relay: Optional[bool] = Query(None),
     year: Optional[int] = Query(None),
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """レース結果一覧取得（フィルタリング・ページネーション対応）"""
@@ -158,7 +158,7 @@ async def get_race_results(
 @router.get("/{race_id}", response_model=RaceResultResponse)
 async def get_race_result(
     race_id: str,
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """レース結果詳細取得"""
@@ -202,7 +202,7 @@ async def get_race_result(
 async def update_race_result(
     race_id: str,
     race_data: RaceResultUpdate,
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """レース結果更新"""
@@ -297,7 +297,7 @@ async def update_race_result(
 @router.delete("/{race_id}")
 async def delete_race_result(
     race_id: str,
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """レース結果削除"""

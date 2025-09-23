@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
-import { apiClient, handleApiError } from '@/lib/api'
+import { api, handleApiError } from '@/lib/api'
 import { Workout, WorkoutFilter, PaginationParams } from '@/types'
 import { WorkoutList } from './components/WorkoutList'
 import { LoadingSpinner } from '@/components/UI/LoadingSpinner'
@@ -42,9 +42,28 @@ export default function WorkoutsPage() {
     try {
       setIsLoading(true)
       setError(null)
-      const response = await apiClient.getWorkouts({ ...filter, ...pagination })
-      setWorkouts(response.data)
-      setTotalPages(response.pagination.total_pages)
+      
+      // APIパラメータを構築
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+        sort_by: pagination.sort_by,
+        sort_order: pagination.sort_order,
+        date_from: filter.date_from,
+        date_to: filter.date_to,
+        distance_min: filter.distance_min,
+        distance_max: filter.distance_max,
+      }
+      
+      const response = await api.workouts.getAll(params)
+      setWorkouts(response.data.items || response.data)
+      
+      // ページネーション情報の設定
+      if (response.data.pagination) {
+        setTotalPages(response.data.pagination.total_pages || 1)
+      } else {
+        setTotalPages(1)
+      }
     } catch (err) {
       const apiError = handleApiError(err)
       setError(apiError.message)
@@ -57,7 +76,7 @@ export default function WorkoutsPage() {
     if (!confirm('この練習記録を削除しますか？')) return
 
     try {
-      await apiClient.deleteWorkout(id)
+      await api.workouts.delete(id)
       setWorkouts(workouts.filter(w => w.id !== id))
       setToast({ message: '練習記録を削除しました', type: 'success' })
     } catch (err) {

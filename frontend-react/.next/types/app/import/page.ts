@@ -1,4 +1,4 @@
-// File: /home/kotaro/RacePredictor/frontend-react/src/app/import/page.tsx
+// File: /home/tako_1012/RacePredictor/frontend-react/src/app/import/page.tsx
 import * as entry from '../../../../src/app/import/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

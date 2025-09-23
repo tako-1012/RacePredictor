@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react'
-import { apiClient } from '@/lib/api'
+import { apiClient, api } from '@/lib/api'
 import { User, LoginFormData, RegisterFormData } from '@/types'
 
 interface AuthContextType {
@@ -31,15 +31,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // トークンが存在する場合のみユーザー情報を取得
         const token = localStorage.getItem('access_token')
         if (token) {
-          const currentUser = await apiClient.getCurrentUser()
+          const currentUser = await api.users.getProfile()
           if (isMounted) {
-            setUser(currentUser)
+            setUser(currentUser.data)
           }
         }
       } catch (error) {
         // トークンが無効な場合はクリア
         if (isMounted) {
-          apiClient.clearToken()
+          localStorage.removeItem('access_token')
+          localStorage.removeItem('refresh_token')
         }
       } finally {
         if (isMounted) {
@@ -57,17 +58,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (data: LoginFormData) => {
     try {
-      const response = await apiClient.login(data)
-      setUser(response.user)
+      console.log('🔐 useAuth login開始:', data);
+      const response = await api.auth.login(data)
+      console.log('✅ useAuth login成功:', response.data);
+      
+      // トークンを保存
+      if (response.data.access_token) {
+        localStorage.setItem('access_token', response.data.access_token);
+        console.log('🎫 アクセストークン保存完了');
+      }
+      if (response.data.refresh_token) {
+        localStorage.setItem('refresh_token', response.data.refresh_token);
+        console.log('🔄 リフレッシュトークン保存完了');
+      }
+      
+      setUser(response.data.user)
+      console.log('👤 ユーザー状態更新完了');
     } catch (error) {
+      console.error('❌ useAuth loginエラー:', error);
       throw error
     }
   }
 
   const register = async (data: RegisterFormData) => {
     try {
-      const response = await apiClient.register(data)
-      setUser(response.user)
+      const response = await api.auth.register(data)
+      setUser(response.data.user)
     } catch (error) {
       throw error
     }
@@ -75,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await apiClient.logout()
+      await api.auth.logout()
     } finally {
       setUser(null)
     }
@@ -83,8 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = async () => {
     try {
-      const currentUser = await apiClient.getCurrentUser()
-      setUser(currentUser)
+      const currentUser = await api.users.getProfile()
+      setUser(currentUser.data)
     } catch (error) {
       setUser(null)
       throw error

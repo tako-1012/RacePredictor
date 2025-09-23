@@ -4,7 +4,7 @@ from sqlalchemy import or_
 from typing import List
 from uuid import UUID
 from app.core.database import get_db
-from app.core.auth import get_current_user
+from app.core.security import get_current_user_from_token
 from app.models.workout import WorkoutType
 from app.schemas.workout import WorkoutTypeCreate, WorkoutTypeResponse
 
@@ -13,7 +13,7 @@ router = APIRouter()
 
 @router.get("/", response_model=List[WorkoutTypeResponse])
 async def get_workout_types(
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """練習種別一覧取得（デフォルト + ユーザーカスタム）"""
@@ -42,7 +42,7 @@ async def get_workout_types(
 @router.post("/", response_model=WorkoutTypeResponse, status_code=status.HTTP_201_CREATED)
 async def create_workout_type(
     workout_type_data: WorkoutTypeCreate,
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """カスタム練習種別作成"""

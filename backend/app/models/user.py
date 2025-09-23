@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Date, Enum, DateTime, UUID
+from sqlalchemy import Column, String, Date, Enum, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
@@ -21,7 +21,7 @@ class GenderEnum(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     name = Column(String(100))

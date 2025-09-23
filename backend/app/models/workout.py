@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Date, DateTime, Integer, Text, Boolean, UUID, ForeignKey, JSON
+from sqlalchemy import Column, String, Date, DateTime, Integer, Text, Boolean, ForeignKey, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
@@ -8,11 +8,11 @@ from app.core.database import Base
 class WorkoutType(Base):
     __tablename__ = "workout_types"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String(100), nullable=False)
     category = Column(String(50))
     is_default = Column(Boolean, default=False)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    created_by = Column(String(36), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     creator = relationship("User", back_populates="created_workout_types")
@@ -22,10 +22,10 @@ class WorkoutType(Base):
 class Workout(Base):
     __tablename__ = "workouts"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     date = Column(Date, nullable=False)
-    workout_type_id = Column(UUID(as_uuid=True), ForeignKey("workout_types.id"), nullable=False)
+    workout_type_id = Column(String(36), ForeignKey("workout_types.id"), nullable=False)
     distance_meters = Column(Integer)
     times_seconds = Column(JSON)
     repetitions = Column(Integer)

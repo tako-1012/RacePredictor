@@ -7,7 +7,7 @@ from uuid import UUID
 import json
 import logging
 from app.core.database import get_db
-from app.core.auth import get_current_user
+from app.core.security import get_current_user_from_token
 from app.models.workout import Workout, WorkoutType
 from app.schemas.workout import WorkoutCreate, WorkoutUpdate, WorkoutResponse
 from app.services.csv_import import CSVImportService
@@ -18,25 +18,47 @@ router = APIRouter()
 
 @router.get("/", response_model=List[WorkoutResponse])
 async def get_workouts(
+    page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=100),
-    offset: int = Query(default=0, ge=0),
-    current_user: UUID = Depends(get_current_user),
+    sort_by: str = Query(default="date"),
+    sort_order: str = Query(default="desc"),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """ワークアウト一覧取得"""
     try:
-        workouts = (
-            db.query(Workout)
-            .filter(Workout.user_id == current_user)
-            .order_by(desc(Workout.date), desc(Workout.created_at))
-            .offset(offset)
-            .limit(limit)
-            .all()
-        )
-
+        query = db.query(Workout).filter(Workout.user_id == current_user.id)
+        
+        # ソート処理
+        if sort_by == "date":
+            if sort_order == "desc":
+                query = query.order_by(desc(Workout.date))
+            else:
+                query = query.order_by(Workout.date.asc())
+        elif sort_by == "distance":
+            if sort_order == "desc":
+                query = query.order_by(desc(Workout.distance_meters))
+            else:
+                query = query.order_by(Workout.distance_meters.asc())
+        elif sort_by == "intensity":
+            if sort_order == "desc":
+                query = query.order_by(desc(Workout.intensity))
+            else:
+                query = query.order_by(Workout.intensity.asc())
+        else:
+            # デフォルトは日付の降順
+            query = query.order_by(desc(Workout.date))
+        
+        # ページネーション
+        offset = (page - 1) * limit
+        workouts = query.offset(offset).limit(limit).all()
+        
         return workouts
 
     except Exception as e:
+        logging.error(f"Workouts API error: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch workouts"
@@ -46,7 +68,7 @@ async def get_workouts(
 @router.post("/", response_model=WorkoutResponse, status_code=status.HTTP_201_CREATED)
 async def create_workout(
     workout_data: WorkoutCreate,
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """ワークアウト作成"""
@@ -79,7 +101,7 @@ async def create_workout(
 
         # ワークアウト作成
         db_workout = Workout(
-            user_id=current_user,
+            user_id=current_user.id,
             date=workout_data.date,
             workout_type_id=workout_data.workout_type_id,
             distance_meters=workout_data.distance_meters,
@@ -110,7 +132,7 @@ async def create_workout(
 @router.get("/{workout_id}", response_model=WorkoutResponse)
 async def get_workout(
     workout_id: str,
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """ワークアウト詳細取得"""
@@ -128,7 +150,7 @@ async def get_workout(
             db.query(Workout)
             .filter(
                 Workout.id == workout_uuid,
-                Workout.user_id == current_user
+                Workout.user_id == current_user.id
             )
             .first()
         )
@@ -154,7 +176,7 @@ async def get_workout(
 async def update_workout(
     workout_id: str,
     workout_data: WorkoutUpdate,
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """ワークアウト更新"""
@@ -173,7 +195,7 @@ async def update_workout(
             db.query(Workout)
             .filter(
                 Workout.id == workout_uuid,
-                Workout.user_id == current_user
+                Workout.user_id == current_user.id
             )
             .first()
         )
@@ -233,7 +255,7 @@ async def update_workout(
 @router.delete("/{workout_id}")
 async def delete_workout(
     workout_id: str,
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """ワークアウト削除"""
@@ -252,7 +274,7 @@ async def delete_workout(
             db.query(Workout)
             .filter(
                 Workout.id == workout_uuid,
-                Workout.user_id == current_user
+                Workout.user_id == current_user.id
             )
             .first()
         )
@@ -281,7 +303,7 @@ async def delete_workout(
 @router.get("/date/{workout_date}", response_model=List[WorkoutResponse])
 async def get_workouts_by_date(
     workout_date: date,
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """特定日のワークアウト取得"""
@@ -290,7 +312,7 @@ async def get_workouts_by_date(
             db.query(Workout)
             .filter(
                 Workout.date == workout_date,
-                Workout.user_id == current_user
+                Workout.user_id == current_user.id
             )
             .order_by(Workout.created_at)
             .all()
@@ -308,7 +330,7 @@ async def get_workouts_by_date(
 @router.post("/import/csv")
 async def import_csv_preview(
     file: UploadFile = File(...),
-    current_user: UUID = Depends(get_current_user)
+    current_user = Depends(get_current_user_from_token)
 ):
     """CSVファイルプレビュー（強化版エラーハンドリング）"""
     try:
@@ -379,7 +401,7 @@ async def import_csv_confirm(
     workout_date: str = Form(...),
     workout_type_id: str = Form(...),
     intensity: int = Form(...),
-    current_user: UUID = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """CSVインポート実行（強化版エラーハンドリング）"""
@@ -439,7 +461,7 @@ async def import_csv_confirm(
             try:
                 # 基本データ
                 workout = Workout(
-                    user_id=current_user,
+                    user_id=current_user.id,
                     date=import_date,
                     workout_type_id=workout_type_uuid,
                     distance_meters=data.get('distance_meters'),

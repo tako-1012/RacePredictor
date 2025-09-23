@@ -3,12 +3,76 @@
 """
 import re
 import html
-from typing import Any, Dict, List
-from fastapi import Request, HTTPException, status
+import time
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+from fastapi import Request, HTTPException, status, Depends
 from fastapi.responses import Response
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from passlib.context import CryptContext
+from jose import JWTError, jwt
+from app.core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
+
+# パスワードハッシュ化の設定
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# JWT認証の設定
+security = HTTPBearer()
+
+
+def get_password_hash(password: str) -> str:
+    """パスワードをハッシュ化"""
+    return pwd_context.hash(password)
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """パスワードを検証"""
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """アクセストークンを作成"""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
+    
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    return encoded_jwt
+
+
+def create_refresh_token(data: dict) -> str:
+    """リフレッシュトークンを作成"""
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
+    to_encode.update({"exp": expire, "type": "refresh"})
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    return encoded_jwt
+
+
+def verify_token(token: str) -> dict:
+    """トークンを検証"""
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        return payload
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="無効なトークンです",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+def get_current_user_from_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    """トークンから現在のユーザー情報を取得"""
+    token = credentials.credentials
+    payload = verify_token(token)
+    return payload
 
 
 class SecurityValidator:
@@ -275,7 +339,7 @@ class InputValidator:
             from datetime import datetime
             datetime.fromisoformat(date_str.replace('Z', '+00:00'))
             return True
-    except ValueError:
+        except ValueError:
             return False
     
     @staticmethod

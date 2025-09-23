@@ -18,20 +18,32 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('📝 ログインフォーム送信:', { email, password: '***' });
+    console.log('🔍 フォームデータ:', { email, password });
     setIsLoading(true)
     setError('')
 
     try {
+      console.log('🚀 ログイン処理開始');
       await login({ email, password })
+      console.log('✅ ログイン成功、リダイレクト準備中');
       // ログイン成功後、フォームをリセット
       setEmail('')
       setPassword('')
       // リダイレクト前に少し待機
       setTimeout(() => {
+        console.log('🔄 ダッシュボードにリダイレクト');
         router.push('/')
       }, 100)
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'ログインに失敗しました')
+      console.error('❌ ログイン失敗:', err);
+      console.error('❌ エラー詳細:', {
+        message: err.message,
+        response: err.response,
+        status: err.response?.status,
+        data: err.response?.data
+      });
+      setError(err.response?.data?.detail || err.message || 'ログインに失敗しました')
     } finally {
       setIsLoading(false)
     }
