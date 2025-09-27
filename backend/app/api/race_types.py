@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, text
 from typing import List
 from uuid import UUID
 from app.core.database import get_db
@@ -13,36 +13,57 @@ router = APIRouter()
 
 @router.get("/", response_model=List[RaceTypeResponse])
 async def get_race_types(
-    current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
-    """レース種目一覧取得（デフォルト + ユーザーカスタム）"""
+    """レース種目一覧取得（デフォルトのみ）"""
     try:
-        race_types = (
-            db.query(RaceType)
-            .filter(
-                or_(
-                    RaceType.is_default == True,
-                    RaceType.created_by == current_user
-                )
-            )
-            .order_by(RaceType.is_default.desc(), RaceType.category, RaceType.name)
-            .all()
-        )
+        # SQLで直接取得してモデル関係の問題を回避
+        result = db.execute(text("""
+            SELECT id, name, category, default_distance_meters, is_customizable,
+                   min_distance_meters, max_distance_meters, description, is_default,
+                   created_by, created_at, updated_at
+            FROM race_types 
+            WHERE is_default = 1
+            ORDER BY category, default_distance_meters, name
+        """))
+        
+        race_types_data = result.fetchall()
+        
+        # 辞書形式に変換
+        race_types = []
+        for row in race_types_data:
+            race_type_dict = {
+                "id": row[0],
+                "name": row[1],
+                "category": row[2],
+                "default_distance_meters": row[3],
+                "is_customizable": bool(row[4]),
+                "min_distance_meters": row[5],
+                "max_distance_meters": row[6],
+                "description": row[7],
+                "is_default": bool(row[8]),
+                "created_by": row[9],
+                "created_at": row[10],
+                "updated_at": row[11]
+            }
+            race_types.append(race_type_dict)
 
         return race_types
 
     except Exception as e:
+        print(f"レース種別取得エラー: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch race types"
+            detail=f"Failed to fetch race types: {str(e)}"
         )
 
 
 @router.post("/", response_model=RaceTypeResponse, status_code=status.HTTP_201_CREATED)
 async def create_race_type(
     race_type_data: RaceTypeCreate,
-    current_user = Depends(get_current_user_from_token),
+    current_user_id: str = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """カスタムレース種目作成"""
@@ -54,7 +75,7 @@ async def create_race_type(
                 RaceType.name == race_type_data.name,
                 or_(
                     RaceType.is_default == True,
-                    RaceType.created_by == current_user
+                    RaceType.created_by == current_user_id
                 )
             )
             .first()
@@ -76,7 +97,7 @@ async def create_race_type(
             max_distance_meters=race_type_data.max_distance_meters,
             description=race_type_data.description,
             is_default=False,
-            created_by=current_user
+            created_by=current_user_id
         )
 
         db.add(db_race_type)
@@ -99,7 +120,7 @@ async def create_race_type(
 async def update_race_type(
     race_type_id: str,
     race_type_data: RaceTypeUpdate,
-    current_user = Depends(get_current_user_from_token),
+    current_user_id: str = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """カスタムレース種目更新"""
@@ -118,7 +139,7 @@ async def update_race_type(
             db.query(RaceType)
             .filter(
                 RaceType.id == race_type_uuid,
-                RaceType.created_by == current_user,
+                RaceType.created_by == current_user_id,
                 RaceType.is_default == False
             )
             .first()
@@ -153,7 +174,7 @@ async def update_race_type(
 @router.delete("/{race_type_id}")
 async def delete_race_type(
     race_type_id: str,
-    current_user = Depends(get_current_user_from_token),
+    current_user_id: str = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """カスタムレース種目削除"""
@@ -172,7 +193,7 @@ async def delete_race_type(
             db.query(RaceType)
             .filter(
                 RaceType.id == race_type_uuid,
-                RaceType.created_by == current_user,
+                RaceType.created_by == current_user_id,
                 RaceType.is_default == False
             )
             .first()

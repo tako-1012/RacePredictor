@@ -10,6 +10,8 @@ from typing import Generator
 from app.core.config import settings
 from app.core.exceptions import DatabaseError
 
+# すべてのモデルをインポートしてテーブル作成を確実にする
+
 logger = logging.getLogger(__name__)
 
 # データベースエンジン設定
@@ -51,14 +53,21 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     except SQLAlchemyError as e:
         logger.error(f"Database error: {str(e)}")
+        logger.error(f"Database error type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Database error traceback: {traceback.format_exc()}")
         db.rollback()
         raise DatabaseError(f"データベースエラー: {str(e)}")
     except Exception as e:
-        # HTTPExceptionは再発生させる
+        # HTTPExceptionとNotFoundErrorは再発生させる
         from fastapi import HTTPException
-        if isinstance(e, HTTPException):
+        from app.core.exceptions import NotFoundError
+        if isinstance(e, (HTTPException, NotFoundError)):
             raise e
         logger.error(f"Unexpected database error: {str(e)}")
+        logger.error(f"Unexpected error type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Unexpected error traceback: {traceback.format_exc()}")
         db.rollback()
         raise DatabaseError("予期しないデータベースエラーが発生しました")
     finally:
@@ -77,9 +86,10 @@ def get_db_session() -> Generator[Session, None, None]:
         db.rollback()
         raise DatabaseError(f"データベースエラー: {str(e)}")
     except Exception as e:
-        # HTTPExceptionは再発生させる
+        # HTTPExceptionとNotFoundErrorは再発生させる
         from fastapi import HTTPException
-        if isinstance(e, HTTPException):
+        from app.core.exceptions import NotFoundError
+        if isinstance(e, (HTTPException, NotFoundError)):
             raise e
         logger.error(f"Unexpected database error: {str(e)}")
         db.rollback()

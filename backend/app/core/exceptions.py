@@ -5,13 +5,13 @@
 from typing import Optional, Dict, Any
 
 
-class RacePredictorException(Exception):
-    """RacePredictorアプリケーションの基底例外クラス"""
+class RunMasterException(Exception):
+    """RunMasterアプリケーションの基底例外クラス"""
     
     def __init__(
         self,
         message: str,
-        error_type: str = "race_predictor_error",
+        error_type: str = "runmaster_error",
         status_code: int = 500,
         details: Optional[Dict[str, Any]] = None
     ):
@@ -22,7 +22,7 @@ class RacePredictorException(Exception):
         super().__init__(self.message)
 
 
-class ValidationError(RacePredictorException):
+class ValidationError(RunMasterException):
     """バリデーションエラー"""
     
     def __init__(self, message: str, field: Optional[str] = None, details: Optional[Dict[str, Any]] = None):
@@ -34,7 +34,7 @@ class ValidationError(RacePredictorException):
         )
 
 
-class AuthenticationError(RacePredictorException):
+class AuthenticationError(RunMasterException):
     """認証エラー"""
     
     def __init__(self, message: str = "認証に失敗しました"):
@@ -45,7 +45,7 @@ class AuthenticationError(RacePredictorException):
         )
 
 
-class AuthorizationError(RacePredictorException):
+class AuthorizationError(RunMasterException):
     """認可エラー"""
     
     def __init__(self, message: str = "アクセス権限がありません"):
@@ -56,7 +56,7 @@ class AuthorizationError(RacePredictorException):
         )
 
 
-class DatabaseError(RacePredictorException):
+class DatabaseError(RunMasterException):
     """データベースエラー"""
     
     def __init__(self, message: str = "データベースエラーが発生しました", details: Optional[Dict[str, Any]] = None):
@@ -68,7 +68,7 @@ class DatabaseError(RacePredictorException):
         )
 
 
-class NotFoundError(RacePredictorException):
+class NotFoundError(RunMasterException):
     """リソースが見つからないエラー"""
     
     def __init__(self, resource: str = "リソース", resource_id: Optional[str] = None):
@@ -84,7 +84,7 @@ class NotFoundError(RacePredictorException):
         )
 
 
-class CSVImportError(RacePredictorException):
+class CSVImportError(RunMasterException):
     """CSVインポートエラー"""
     
     def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
@@ -96,7 +96,7 @@ class CSVImportError(RacePredictorException):
         )
 
 
-class PredictionError(RacePredictorException):
+class PredictionError(RunMasterException):
     """予測エラー"""
     
     def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
@@ -108,7 +108,7 @@ class PredictionError(RacePredictorException):
         )
 
 
-class RateLimitError(RacePredictorException):
+class RateLimitError(RunMasterException):
     """レート制限エラー"""
     
     def __init__(self, message: str = "リクエスト制限に達しました"):

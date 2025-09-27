@@ -28,7 +28,7 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error('ErrorBoundary caught an error:', error, errorInfo)
     this.setState({ error, errorInfo })
     
-    // エラーをログサービスに送信（実装予定）
+    // エラーをログサービスに送信（今後実装予定）
     // logErrorToService(error, errorInfo)
   }
 

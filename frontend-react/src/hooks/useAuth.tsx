@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react'
-import { apiClient, api } from '@/lib/api'
+import { apiClient } from '@/lib/api'
 import { User, LoginFormData, RegisterFormData } from '@/types'
 
 interface AuthContextType {
@@ -28,23 +28,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const initAuth = async () => {
       try {
+        console.log('🔍 認証状態初期化開始')
         // トークンが存在する場合のみユーザー情報を取得
         const token = localStorage.getItem('access_token')
+        console.log('🎫 トークン存在確認:', !!token)
+        
         if (token) {
-          const currentUser = await api.users.getProfile()
+          console.log('📡 ユーザー情報取得中...')
+          const currentUser = await apiClient.getCurrentUser()
+          console.log('👤 ユーザー情報取得成功:', currentUser)
           if (isMounted) {
-            setUser(currentUser.data)
+            setUser(currentUser)
+            console.log('✅ 認証状態: 認証済み')
           }
+        } else {
+          console.log('❌ 認証状態: 未認証（トークンなし）')
         }
       } catch (error) {
+        console.error('❌ 認証状態確認エラー:', error)
         // トークンが無効な場合はクリア
         if (isMounted) {
           localStorage.removeItem('access_token')
           localStorage.removeItem('refresh_token')
+          console.log('🧹 無効なトークンをクリア')
         }
       } finally {
         if (isMounted) {
           setIsLoading(false)
+          console.log('🏁 認証状態初期化完了')
         }
       }
     }
@@ -59,21 +70,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (data: LoginFormData) => {
     try {
       console.log('🔐 useAuth login開始:', data);
-      const response = await api.auth.login(data)
-      console.log('✅ useAuth login成功:', response.data);
+      const response = await apiClient.login(data)
+      console.log('✅ useAuth login成功:', response);
       
       // トークンを保存
-      if (response.data.access_token) {
-        localStorage.setItem('access_token', response.data.access_token);
+      if (response.access_token) {
+        localStorage.setItem('access_token', response.access_token);
         console.log('🎫 アクセストークン保存完了');
       }
-      if (response.data.refresh_token) {
-        localStorage.setItem('refresh_token', response.data.refresh_token);
+      if (response.refresh_token) {
+        localStorage.setItem('refresh_token', response.refresh_token);
         console.log('🔄 リフレッシュトークン保存完了');
       }
       
-      setUser(response.data.user)
-      console.log('👤 ユーザー状態更新完了');
+      // ユーザー情報を設定（レスポンスにuserが含まれている場合）
+      if (response.user) {
+        setUser(response.user)
+        console.log('👤 ユーザー状態更新完了');
+      } else {
+        // ユーザー情報がレスポンスに含まれていない場合は取得
+        console.log('📡 ユーザー情報を取得中...');
+        const currentUser = await apiClient.getCurrentUser()
+        setUser(currentUser)
+        console.log('👤 ユーザー情報取得・設定完了');
+      }
+      
+      // 認証状態を確実に更新
+      setIsLoading(false)
     } catch (error) {
       console.error('❌ useAuth loginエラー:', error);
       throw error
@@ -82,8 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (data: RegisterFormData) => {
     try {
-      const response = await api.auth.register(data)
-      setUser(response.data.user)
+      const response = await apiClient.register(data)
+      setUser(response.user)
     } catch (error) {
       throw error
     }
@@ -91,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await api.auth.logout()
+      await apiClient.logout()
     } finally {
       setUser(null)
     }
@@ -99,8 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = async () => {
     try {
-      const currentUser = await api.users.getProfile()
-      setUser(currentUser.data)
+      const currentUser = await apiClient.getCurrentUser()
+      setUser(currentUser)
     } catch (error) {
       setUser(null)
       throw error

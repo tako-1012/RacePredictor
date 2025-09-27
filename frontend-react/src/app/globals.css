@@ -2,69 +2,311 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
+    scroll-behavior: smooth;
   }
   
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-gradient-to-br from-neutral-50 via-white to-primary-50 text-neutral-900 antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    writing-mode: horizontal-tb;
+    text-orientation: mixed;
+  }
+  
+  /* ナビゲーションテキストを強制的に横書きに */
+  nav button, nav a {
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    line-height: 1.2 !important;
+  }
+  
+  /* ナビゲーションボタンのテキスト重なり防止 */
+  nav button span {
+    line-height: 1.1 !important;
+    margin-top: 2px !important;
+  }
+
+  * {
+    @apply border-neutral-200;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl lg:text-5xl;
+  }
+
+  h2 {
+    @apply text-3xl lg:text-4xl;
+  }
+
+  h3 {
+    @apply text-2xl lg:text-3xl;
+  }
+
+  h4 {
+    @apply text-xl lg:text-2xl;
+  }
+
+  h5 {
+    @apply text-lg lg:text-xl;
+  }
+
+  h6 {
+    @apply text-base lg:text-lg;
   }
 }
 
 @layer components {
+  /* Button Components */
+  .btn {
+    @apply inline-flex items-center justify-center rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply btn bg-gradient-primary text-white shadow-soft hover:shadow-medium hover:scale-105 focus:ring-primary-500 px-6 py-3;
   }
-  
+
   .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply btn bg-white text-neutral-700 border border-neutral-300 shadow-soft hover:bg-neutral-50 hover:shadow-medium focus:ring-primary-500 px-6 py-3;
   }
-  
+
+  .btn-success {
+    @apply btn bg-gradient-secondary text-white shadow-soft hover:shadow-medium hover:scale-105 focus:ring-secondary-500 px-6 py-3;
+  }
+
   .btn-danger {
-    @apply bg-accent-600 hover:bg-accent-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply btn bg-gradient-to-r from-error-500 to-error-600 text-white shadow-soft hover:shadow-medium hover:scale-105 focus:ring-error-500 px-6 py-3;
   }
-  
+
+  .btn-ghost {
+    @apply btn text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 focus:ring-primary-500 px-4 py-2;
+  }
+
+  .btn-sm {
+    @apply px-4 py-2 text-sm;
+  }
+
+  .btn-lg {
+    @apply px-8 py-4 text-lg;
+  }
+
+  /* Card Components */
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
+    @apply bg-white rounded-2xl shadow-soft border border-neutral-200/50 p-6 hover:shadow-medium transition-all duration-300;
   }
-  
+
+  .card-elevated {
+    @apply bg-white rounded-2xl shadow-medium border border-neutral-200/50 p-8 hover:shadow-large transition-all duration-300;
+  }
+
+  .card-interactive {
+    @apply card cursor-pointer hover:scale-105 hover:shadow-large;
+  }
+
+  .card-gradient {
+    @apply bg-gradient-to-br from-white to-primary-50/30 rounded-2xl shadow-soft border border-primary-200/50 p-6;
+  }
+
+  /* Input Components */
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-4 py-3 border border-neutral-300 rounded-xl bg-white text-neutral-900 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-soft;
   }
-  
+
+  .input-field:focus {
+    @apply shadow-medium;
+  }
+
+  .input-field.error {
+    @apply border-error-300 focus:ring-error-500;
+  }
+
+  .input-field.success {
+    @apply border-success-300 focus:ring-success-500;
+  }
+
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply block text-sm font-semibold text-neutral-700 mb-2;
   }
-  
+
+  .label-required::after {
+    @apply text-error-500 ml-1;
+    content: '*';
+  }
+
+  /* Metric Cards */
   .metric-card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200;
+    @apply card-interactive min-w-0 overflow-hidden;
   }
   
+  .metric-card.group {
+    /* group utility is applied directly in HTML */
+  }
+
   .metric-value {
-    @apply text-2xl font-bold text-gray-900;
+    @apply text-3xl font-bold text-neutral-900 group-hover:text-primary-600 transition-colors duration-200;
   }
-  
+
   .metric-label {
-    @apply text-sm text-gray-600;
+    @apply text-sm font-medium text-neutral-600 mt-1;
   }
-  
+
   .metric-change {
-    @apply text-sm font-medium;
+    @apply text-sm font-semibold flex items-center gap-1 mt-2;
   }
-  
+
   .metric-change.positive {
-    @apply text-green-600;
+    @apply text-success-600;
   }
-  
+
   .metric-change.negative {
-    @apply text-red-600;
+    @apply text-error-600;
   }
-  
+
   .metric-change.neutral {
-    @apply text-gray-600;
+    @apply text-neutral-600;
+  }
+
+  /* Navigation Components */
+  .nav-link {
+    @apply flex items-center gap-1.5 px-3 py-2 rounded-xl text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-all duration-200 font-medium;
+  }
+
+  .nav-link.active {
+    @apply bg-primary-100 text-primary-700 shadow-soft;
+  }
+
+  /* Badge Components */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-100 text-primary-700;
+  }
+
+  .badge-success {
+    @apply badge bg-success-100 text-success-700;
+  }
+
+  .badge-warning {
+    @apply badge bg-warning-100 text-warning-700;
+  }
+
+  .badge-error {
+    @apply badge bg-error-100 text-error-700;
+  }
+
+  .badge-neutral {
+    @apply badge bg-neutral-100 text-neutral-700;
+  }
+
+  /* Loading States */
+  .loading-skeleton {
+    @apply animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 rounded-xl;
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  /* Glass Effect */
+  .glass {
+    @apply bg-white/80 backdrop-blur-sm border border-white/20;
+  }
+
+  .glass-dark {
+    @apply bg-neutral-900/80 backdrop-blur-sm border border-neutral-700/20;
+  }
+
+  /* Gradient Text */
+  .gradient-text {
+    @apply bg-gradient-primary bg-clip-text text-transparent;
+  }
+
+  .gradient-text-secondary {
+    @apply bg-gradient-secondary bg-clip-text text-transparent;
+  }
+
+  .gradient-text-accent {
+    @apply bg-gradient-accent bg-clip-text text-transparent;
+  }
+
+  /* Chart Components */
+  .chart-container {
+    @apply relative;
+  }
+
+  .chart-container canvas {
+    max-height: 280px !important;
+  }
+
+  .weekly-stats {
+    margin-top: 1.5rem;     /* 0.75rem → 1.5rem */
+    padding-top: 1rem;      /* 0.75rem → 1rem */
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .stat-item {
+    @apply flex flex-col items-center gap-1;
+  }
+
+  .stat-number {
+    font-size: 1.75rem;     /* text-2xl相当 */
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .stat-label {
+    font-size: 0.875rem;    /* text-sm相当 */
+    margin-top: 0.25rem;
+  }
+
+  .stat-unit {
+    font-size: 0.75rem;     /* text-xs相当 */
+    color: #9ca3af;
+  }
+
+  .weekly-activity-card {
+    min-height: 420px;      /* 320px → 420px */
+  }
+
+  /* 練習記録UI改修用スタイル */
+  .workout-section {
+    @apply transition-all duration-200;
+  }
+
+  .workout-section:hover {
+    @apply shadow-sm;
+  }
+
+  .step-card {
+    @apply transition-all duration-200;
+  }
+
+  .step-card:hover {
+    @apply shadow-sm;
+  }
+
+  .session-header {
+    @apply flex justify-between items-center mb-6 pb-4 border-b border-gray-100;
+  }
+
+  .time-inputs {
+    @apply flex space-x-2;
   }
 }
 
@@ -80,5 +322,99 @@
   
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* 練習記録UI改修用レスポンシブ対応 */
+@media (max-width: 1024px) {
+  .grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+  
+  .workout-section {
+    margin-bottom: 1.5rem;
+  }
+}
+
+/* ダッシュボード統計カードのレスポンシブ対応 */
+@media (max-width: 1280px) {
+  .metric-card {
+    min-width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .metric-card {
+    min-width: 150px;
+  }
+  
+  .metric-value {
+    @apply text-xl;
+  }
+}
+
+@media (max-width: 640px) {
+  .session-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .time-inputs {
+    justify-content: space-between;
+  }
+  
+  .workout-section .flex.space-x-2 {
+    flex-direction: column;
+    space-x: 0;
+    gap: 0.5rem;
+  }
+}
+
+/* デスクトップでは横並び可能 */
+@media (min-width: 1024px) {
+  .workout-sections {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr; /* ウォームアップ:メイン:クールダウン = 1:2:1 */
+    gap: 1rem;
+  }
+}
+
+/* タブレット・モバイルでは縦積み */
+@media (max-width: 1023px) {
+  .workout-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+/* 練習記録詳細ページリデザイン用スタイル */
+@media (max-width: 768px) {
+  .workout-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .session-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .header-buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+  
+  .stat-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* タブレット対応 */
+@media (max-width: 1024px) {
+  .session-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }

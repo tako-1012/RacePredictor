@@ -8,6 +8,7 @@ import { Race, RaceType } from '@/types'
 import { DetailedRaceForm } from '../components/DetailedRaceForm'
 import { LoadingSpinner } from '@/components/UI/LoadingSpinner'
 import { Toast } from '@/components/UI/Toast'
+import { Breadcrumb } from '@/components/Layout/Breadcrumb'
 import { formatDistance, formatPace, formatTime } from '@/lib/utils'
 
 export default function RaceDetailPage() {
@@ -21,7 +22,7 @@ export default function RaceDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<any | null>(null)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   useEffect(() => {
@@ -42,11 +43,21 @@ export default function RaceDetailPage() {
     try {
       setIsLoading(true)
       setError(null)
+      
+      // raceIdの存在チェック
+      if (!raceId) {
+        setError('レースIDが指定されていません')
+        return
+      }
+      
+      console.log('Loading race with ID:', raceId)
       const raceData = await apiClient.getRace(raceId)
       setRace(raceData)
     } catch (err) {
       const apiError = handleApiError(err)
-      setError(apiError.message)
+      console.error('Failed to load race:', err)
+      console.error('API Error:', apiError)
+      setError(apiError)
     } finally {
       setIsLoading(false)
     }
@@ -102,7 +113,10 @@ export default function RaceDetailPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">エラーが発生しました</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-gray-600 mb-4">{error.message || 'エラーが発生しました'}</p>
+          {error.suggestion && (
+            <p className="text-sm text-gray-500 mb-4">{error.suggestion}</p>
+          )}
           <button
             onClick={loadRace}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -134,6 +148,11 @@ export default function RaceDetailPage() {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* パンくずナビゲーション */}
+          <div className="mb-6">
+            <Breadcrumb />
+          </div>
+
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">レース結果を編集</h1>
             <p className="mt-2 text-gray-600">レースの詳細を修正してください</p>
@@ -164,6 +183,11 @@ export default function RaceDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* パンくずナビゲーション */}
+        <div className="mb-6">
+          <Breadcrumb />
+        </div>
+
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>

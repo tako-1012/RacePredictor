@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '002_add_race_types'
-down_revision = '001_initial_migration'
+down_revision = '001'
 branch_labels = None
 depends_on = None
 
@@ -19,7 +19,7 @@ depends_on = None
 def upgrade():
     # Create race_types table
     op.create_table('race_types',
-        sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column('id', sa.String(36), nullable=False),
         sa.Column('name', sa.String(length=50), nullable=False),
         sa.Column('category', sa.String(length=20), nullable=False),
         sa.Column('default_distance_meters', sa.Integer(), nullable=False),
@@ -28,16 +28,16 @@ def upgrade():
         sa.Column('max_distance_meters', sa.Integer(), nullable=True),
         sa.Column('description', sa.String(length=500), nullable=True),
         sa.Column('is_default', sa.Boolean(), nullable=True),
-        sa.Column('created_by', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+        sa.Column('created_by', sa.String(36), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
         sa.ForeignKeyConstraint(['created_by'], ['users.id'], ),
         sa.PrimaryKeyConstraint('id')
     )
 
     # Update race_results table
     op.add_column('race_results', sa.Column('race_name', sa.String(length=100), nullable=True))
-    op.add_column('race_results', sa.Column('race_type_id', postgresql.UUID(as_uuid=True), nullable=True))
+    op.add_column('race_results', sa.Column('race_type_id', sa.String(36), nullable=True))
     op.add_column('race_results', sa.Column('pace_seconds', sa.Float(), nullable=True))
     op.add_column('race_results', sa.Column('total_participants', sa.Integer(), nullable=True))
     op.add_column('race_results', sa.Column('notes', sa.String(length=1000), nullable=True))
@@ -51,7 +51,7 @@ def upgrade():
     op.add_column('race_results', sa.Column('weather', sa.String(length=50), nullable=True))
     op.add_column('race_results', sa.Column('course_type', sa.String(length=50), nullable=True))
     op.add_column('race_results', sa.Column('strategy_notes', sa.String(length=1000), nullable=True))
-    op.add_column('race_results', sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True))
+    op.add_column('race_results', sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True))
 
     # Add foreign key constraint
     op.create_foreign_key('fk_race_results_race_type_id', 'race_results', 'race_types', ['race_type_id'], ['id'])

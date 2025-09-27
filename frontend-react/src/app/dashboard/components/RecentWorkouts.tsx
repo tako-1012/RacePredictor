@@ -8,6 +8,54 @@ interface RecentWorkoutsProps {
 }
 
 export const RecentWorkouts = memo(function RecentWorkouts({ workouts }: RecentWorkoutsProps) {
+  // 練習種別の表示名を取得する関数
+  const getWorkoutTypeLabel = (typeName: string): string => {
+    const labelMap: Record<string, string> = {
+      // 持久系練習
+      easy_run: 'イージーラン',
+      long_run: 'ロング走',
+      medium_run: 'ミディアムラン',
+      tempo_run: 'テンポ走',
+      
+      // スピード・強度系練習
+      interval_run: 'インターバル走',
+      repetition: 'レペティション',
+      build_up: 'ビルドアップ走',
+      fartlek: 'ファルトレク',
+      pace_change: '変化走',
+      
+      // 特殊練習
+      hill_run: '坂道練習',
+      stair_run: '階段練習',
+      sand_run: '砂浜・芝生走',
+      
+      // ウォームアップ
+      jogging: 'ジョギング',
+      walking: 'ウォーキング',
+      marching: 'その場足踏み',
+      movement_prep: '動き作り',
+      ladder: 'ラダートレーニング',
+      flow_run: '流し',
+      wind_sprint: 'ウィンドスプリント',
+      dynamic_stretch: '動的ストレッチ',
+      brazil_warmup: 'ブラジル体操',
+      joint_mobility: '関節体操',
+      balance_coordination: 'バランス・コーディネーション',
+      muscle_activation: '筋活性化エクササイズ',
+      plyometrics: 'プライオメトリクス',
+      core_training: 'コアトレーニング',
+      
+      // クールダウン
+      cooldown: 'クールダウン',
+      
+      // その他
+      strength: '筋力トレーニング',
+      recovery: '回復走',
+      other: 'その他'
+    }
+    return labelMap[typeName] || typeName
+  }
+
   if (workouts.length === 0) {
     return (
       <div className="text-center py-8">
@@ -37,7 +85,7 @@ export const RecentWorkouts = memo(function RecentWorkouts({ workouts }: RecentW
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2">
                   <p className="text-sm font-medium text-gray-900 truncate">
-                    {workout.workout_type_name || '不明'}
+                    {getWorkoutTypeLabel(workout.workout_type_name) || '不明'}
                   </p>
                 </div>
                 <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">

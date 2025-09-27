@@ -5,7 +5,7 @@ import os
 
 class Settings(BaseSettings):
     # アプリケーション基本設定
-    app_name: str = "RacePredictor"
+    app_name: str = "RunMaster"
     app_version: str = "1.0.0"
     debug: bool = True
     environment: str = "development"
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 7
     
     # CORS設定
-    cors_origins: str = "http://localhost:3000,http://localhost:8000"
+    cors_origins: str = "http://localhost:3000,http://localhost:3001,http://localhost:8000"
     
     # ログ設定
     log_level: str = "INFO"
@@ -48,10 +48,16 @@ class Settings(BaseSettings):
     
     # レート制限設定
     rate_limit_requests: int = 100
+    
+    # AI機能設定
+    ai_features_enabled: bool = True
+    ml_models_path: str = "backend/ml_models"
+    feature_store_retention_days: int = 90
+    prediction_cache_ttl: int = 3600
     rate_limit_window: int = 60  # seconds
     
     # Redis設定（キャッシュ用）
-    redis_url: Optional[str] = None
+    redis_url: Optional[str] = "redis://localhost:6379/0"
     
     # メール設定
     smtp_host: Optional[str] = None

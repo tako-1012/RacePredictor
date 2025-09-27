@@ -13,7 +13,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<any>('')
 
   const { register } = useAuth()
   const router = useRouter()
@@ -47,21 +47,23 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <Activity className="h-12 w-12 text-primary-600" />
+        <div className="flex justify-center mb-6">
+          <div className="w-16 h-16 bg-gradient-secondary rounded-2xl flex items-center justify-center shadow-glow">
+            <Activity className="h-8 w-8 text-white" />
+          </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
+        <h2 className="text-center text-4xl font-bold gradient-text-secondary mb-2">
           アカウント作成
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          RacePredictorでランニングデータを管理しましょう
+        <p className="text-center text-neutral-600 text-lg">
+          RunMasterでランニングデータを管理しましょう
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <div className="card-elevated">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="label">
@@ -144,8 +146,16 @@ export default function RegisterPage() {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                <p className="text-sm text-red-600">{error}</p>
+              <div className="bg-error-50 border border-error-200 rounded-xl p-4">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-error-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <p className="text-sm font-medium text-error-700">{error.message || 'エラーが発生しました'}</p>
+                  {error.suggestion && (
+                    <p className="text-sm text-gray-500 mt-1">{error.suggestion}</p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -167,30 +177,35 @@ export default function RegisterPage() {
             </div>
           </form>
 
-          <div className="mt-6">
+          <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
+                <div className="w-full border-t border-neutral-200" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">または</span>
+                <span className="px-3 bg-white text-neutral-500 font-medium">または</span>
               </div>
             </div>
 
             <div className="mt-6">
               <Link
                 href="/login"
-                className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                className="btn-secondary w-full"
               >
                 既存アカウントでログイン
               </Link>
             </div>
           </div>
 
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">
-              アカウント作成により、利用規約とプライバシーポリシーに同意したものとみなします
-            </p>
+          <div className="mt-8 text-center">
+            <div className="inline-flex items-center px-4 py-2 bg-secondary-50 rounded-xl">
+              <svg className="w-4 h-4 text-secondary-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-secondary-700 font-medium">
+                アカウント作成により、利用規約とプライバシーポリシーに同意したものとみなします
+              </p>
+            </div>
           </div>
         </div>
       </div>

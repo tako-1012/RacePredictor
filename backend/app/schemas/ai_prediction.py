@@ -1,0 +1,167 @@
+"""
+AI予測機能用のPydanticスキーマ
+
+このモジュールには以下のスキーマが含まれます：
+- PredictionRequest: 予測リクエスト
+- PredictionResponse: 予測レスポンス
+- PredictionHistory: 予測履歴
+- ModelPerformance: モデル性能情報
+"""
+
+from __future__ import annotations
+
+from typing import Optional, List, Dict, Any
+from datetime import datetime
+from pydantic import BaseModel, Field, field_validator
+
+
+class PredictionRequest(BaseModel):
+    """予測リクエストスキーマ"""
+    race_type: str = Field(..., description="レース種目")
+    distance: float = Field(..., gt=0, description="距離（km）")
+    user_id: int = Field(..., description="ユーザーID")
+    
+    @field_validator('race_type')
+    @classmethod
+    def validate_race_type(cls, v):
+        valid_types = ['5k', '10k', 'half_marathon', 'marathon', 'other']
+        if v not in valid_types:
+            raise ValueError(f'race_type must be one of {valid_types}')
+        return v
+    
+    @field_validator('distance')
+    @classmethod
+    def validate_distance(cls, v):
+        if v <= 0:
+            raise ValueError('distance must be greater than 0')
+        if v > 100:
+            raise ValueError('distance must be less than or equal to 100 km')
+        return v
+
+
+class PredictionResponse(BaseModel):
+    """予測レスポンススキーマ"""
+    predicted_time: float = Field(..., description="予測タイム（秒）")
+    predicted_time_formatted: str = Field(..., description="フォーマット済み予測タイム")
+    confidence: float = Field(..., ge=0, le=1, description="予測信頼度（0-1）")
+    model_used: str = Field(..., description="使用されたモデル名")
+    features_used: Dict[str, Any] = Field(..., description="使用された特徴量")
+    prediction_id: Optional[int] = Field(None, description="予測結果ID")
+    created_at: datetime = Field(..., description="予測日時")
+    
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+        validate_assignment = False
+
+
+class PredictionHistory(BaseModel):
+    """予測履歴スキーマ"""
+    id: int = Field(..., description="予測ID")
+    race_type: str = Field(..., description="レース種目")
+    distance: float = Field(..., description="距離（km）")
+    predicted_time: float = Field(..., description="予測タイム（秒）")
+    predicted_time_formatted: str = Field(..., description="フォーマット済み予測タイム")
+    confidence: float = Field(..., description="予測信頼度")
+    model_used: str = Field(..., description="使用されたモデル名")
+    actual_time: Optional[float] = Field(None, description="実際のタイム（秒）")
+    actual_time_formatted: Optional[str] = Field(None, description="フォーマット済み実際のタイム")
+    prediction_accuracy: Optional[float] = Field(None, description="予測精度")
+    created_at: datetime = Field(..., description="予測日時")
+    actual_date: Optional[datetime] = Field(None, description="実際のレース日時")
+    
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+        validate_assignment = False
+
+
+class ModelPerformance(BaseModel):
+    """モデル性能情報スキーマ"""
+    model_id: int = Field(..., description="モデルID")
+    model_name: str = Field(..., description="モデル名")
+    algorithm: str = Field(..., description="アルゴリズム")
+    version: str = Field(..., description="バージョン")
+    is_active: bool = Field(..., description="アクティブフラグ")
+    performance_metrics: Dict[str, float] = Field(..., description="性能指標")
+    training_data_count: int = Field(..., description="学習データ数")
+    feature_count: int = Field(..., description="特徴量数")
+    created_at: datetime = Field(..., description="作成日時")
+    updated_at: datetime = Field(..., description="更新日時")
+    
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+        validate_assignment = False
+
+
+class PredictionComparison(BaseModel):
+    """予測比較スキーマ"""
+    prediction_id: int = Field(..., description="予測ID")
+    race_type: str = Field(..., description="レース種目")
+    distance: float = Field(..., description="距離（km）")
+    predicted_time: float = Field(..., description="予測タイム（秒）")
+    actual_time: Optional[float] = Field(None, description="実際のタイム（秒）")
+    time_difference: Optional[float] = Field(None, description="時間差（秒）")
+    accuracy_percentage: Optional[float] = Field(None, description="精度（%）")
+    prediction_date: datetime = Field(..., description="予測日時")
+    actual_date: Optional[datetime] = Field(None, description="実際のレース日時")
+
+
+class FeatureImportance(BaseModel):
+    """特徴量重要度スキーマ"""
+    feature_name: str = Field(..., description="特徴量名")
+    importance: float = Field(..., description="重要度")
+    description: Optional[str] = Field(None, description="特徴量の説明")
+
+
+class ModelTrainingRequest(BaseModel):
+    """モデル学習リクエストスキーマ"""
+    algorithm: str = Field(..., description="アルゴリズム名")
+    optimize_hyperparams: bool = Field(False, description="ハイパーパラメータ最適化フラグ")
+    training_data_limit: int = Field(1000, ge=100, le=10000, description="学習データ数制限")
+    
+    @field_validator('algorithm')
+    @classmethod
+    def validate_algorithm(cls, v):
+        valid_algorithms = ['RandomForest', 'GradientBoosting', 'LinearRegression', 'RidgeRegression', 'Ensemble']
+        if v not in valid_algorithms:
+            raise ValueError(f'algorithm must be one of {valid_algorithms}')
+        return v
+
+
+class ModelTrainingResponse(BaseModel):
+    """モデル学習レスポンススキーマ"""
+    job_id: str = Field(..., description="ジョブID")
+    status: str = Field(..., description="ステータス")
+    algorithm: str = Field(..., description="アルゴリズム")
+    created_at: datetime = Field(..., description="作成日時")
+    estimated_completion_time: Optional[int] = Field(None, description="推定完了時間（秒）")
+
+
+class PredictionStatistics(BaseModel):
+    """予測統計スキーマ"""
+    total_predictions: int = Field(..., description="総予測数")
+    successful_predictions: int = Field(..., description="成功予測数")
+    failed_predictions: int = Field(..., description="失敗予測数")
+    average_confidence: float = Field(..., description="平均信頼度")
+    accuracy_by_race_type: Dict[str, float] = Field(..., description="種目別精度")
+    accuracy_by_distance: Dict[str, float] = Field(..., description="距離別精度")
+    model_performance: Dict[str, Dict[str, float]] = Field(..., description="モデル別性能")
+    recent_trends: Dict[str, Any] = Field(..., description="最近のトレンド")
+    
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
+        validate_assignment = False
+
+
+class AISystemStatus(BaseModel):
+    """AI機能ステータススキーマ"""
+    ai_enabled: bool = Field(..., description="AI機能有効フラグ")
+    active_models: int = Field(..., description="アクティブモデル数")
+    total_models: int = Field(..., description="総モデル数")
+    last_training_date: Optional[datetime] = Field(None, description="最終学習日時")
+    system_health: str = Field(..., description="システムヘルス")
+    feature_store_size: int = Field(..., description="特徴量ストアサイズ")
+    prediction_count_today: int = Field(..., description="今日の予測数")

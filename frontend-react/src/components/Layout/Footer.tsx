@@ -9,9 +9,9 @@ export function Footer() {
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">RP</span>
+                <span className="text-white font-bold text-sm">RM</span>
               </div>
-              <span className="text-xl font-bold text-gray-900">RacePredictor</span>
+              <span className="text-xl font-bold text-gray-900">RunMaster</span>
             </div>
             <p className="text-gray-600 text-sm">
               ランニングの練習記録を管理し、レースタイムを予測するアプリケーションです。
@@ -62,7 +62,7 @@ export function Footer() {
         <div className="mt-8 pt-8 border-t border-gray-200">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-gray-600">
-              © 2024 RacePredictor. All rights reserved.
+              © 2024 RunMaster. All rights reserved.
             </p>
             <div className="mt-4 md:mt-0 flex space-x-6">
               <a href="#" className="text-gray-400 hover:text-gray-500">

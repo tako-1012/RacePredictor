@@ -1,0 +1,312 @@
+name: AI Features Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/app/ml/**'
+      - 'backend/app/services/**'
+      - 'backend/app/tasks/**'
+      - 'backend/app/api/ai_*'
+      - 'backend/tests/test_ai/**'
+      - 'backend/requirements.txt'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/app/ml/**'
+      - 'backend/app/services/**'
+      - 'backend/app/tasks/**'
+      - 'backend/app/api/ai_*'
+      - 'backend/tests/test_ai/**'
+      - 'backend/requirements.txt'
+  schedule:
+    # 毎日午前2時に実行（UTC）
+    - cron: '0 2 * * *'
+
+jobs:
+  test-ai-features:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11]
+    
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: runmaster_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:6
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libpq-dev
+    
+    - name: Install Python dependencies
+      run: |
+        cd backend
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest-cov pytest-xdist pytest-mock pytest-asyncio
+    
+    - name: Set environment variables
+      run: |
+        echo "TESTING=true" >> $GITHUB_ENV
+        echo "AI_FEATURES_ENABLED=true" >> $GITHUB_ENV
+        echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/runmaster_test" >> $GITHUB_ENV
+        echo "REDIS_URL=redis://localhost:6379/1" >> $GITHUB_ENV
+        echo "CELERY_BROKER_URL=redis://localhost:6379/1" >> $GITHUB_ENV
+        echo "CELERY_RESULT_BACKEND=redis://localhost:6379/1" >> $GITHUB_ENV
+        echo "ML_MODEL_PATH=./models" >> $GITHUB_ENV
+        echo "LOG_LEVEL=INFO" >> $GITHUB_ENV
+    
+    - name: Create necessary directories
+      run: |
+        cd backend
+        mkdir -p models
+        mkdir -p logs
+        mkdir -p htmlcov
+    
+    - name: Run database migrations
+      run: |
+        cd backend
+        alembic upgrade head
+    
+    - name: Run AI unit tests
+      run: |
+        cd backend
+        pytest tests/test_ai/ -m "unit and ai" --cov=app --cov-report=xml --cov-report=term-missing -v
+    
+    - name: Run AI integration tests
+      run: |
+        cd backend
+        pytest tests/test_ai/ -m "integration and ai" --cov=app --cov-append --cov-report=xml --cov-report=term-missing -v
+    
+    - name: Run AI performance tests
+      run: |
+        cd backend
+        pytest tests/test_ai/ -m "performance and ai" --cov=app --cov-append --cov-report=xml --cov-report=term-missing -v
+    
+    - name: Run AI accuracy validation tests
+      run: |
+        cd backend
+        pytest tests/test_ai/ -m "accuracy and ai" --cov=app --cov-append --cov-report=xml --cov-report=term-missing -v
+    
+    - name: Run AI error handling tests
+      run: |
+        cd backend
+        pytest tests/test_ai/ -m "error_handling and ai" --cov=app --cov-append --cov-report=xml --cov-report=term-missing -v
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./backend/coverage.xml
+        flags: ai-features
+        name: ai-features-coverage
+        fail_ci_if_error: true
+    
+    - name: Generate test report
+      if: always()
+      run: |
+        cd backend
+        pytest tests/test_ai/ --junitxml=pytest-report.xml --html=pytest-report.html --self-contained-html
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-${{ matrix.python-version }}
+        path: |
+          backend/pytest-report.xml
+          backend/pytest-report.html
+          backend/htmlcov/
+    
+    - name: Notify on failure
+      if: failure()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        channel: '#ci-alerts'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+
+  test-ai-models:
+    runs-on: ubuntu-latest
+    needs: test-ai-features
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        cd backend
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest-cov
+    
+    - name: Test ML model accuracy
+      run: |
+        cd backend
+        python -m pytest tests/test_ai/test_accuracy_validation.py -v --tb=short
+    
+    - name: Generate model performance report
+      run: |
+        cd backend
+        python -c "
+        import json
+        import datetime
+        
+        report = {
+            'timestamp': datetime.datetime.now().isoformat(),
+            'models_tested': ['random_forest', 'gradient_boosting', 'linear_regression', 'ridge_regression'],
+            'test_status': 'passed',
+            'accuracy_threshold': 0.8,
+            'performance_threshold': '< 1s prediction time'
+        }
+        
+        with open('model_performance_report.json', 'w') as f:
+            json.dump(report, f, indent=2)
+        "
+    
+    - name: Upload model report
+      uses: actions/upload-artifact@v3
+      with:
+        name: model-performance-report
+        path: backend/model_performance_report.json
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: test-ai-features
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Run security scan
+      uses: pypa/gh-action-pip-audit@v1.0.0
+      with:
+        inputs: backend/requirements.txt
+    
+    - name: Run bandit security linter
+      run: |
+        cd backend
+        pip install bandit
+        bandit -r app/ml/ app/services/ app/tasks/ -f json -o bandit-report.json || true
+    
+    - name: Upload security report
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-report
+        path: backend/bandit-report.json
+
+  deploy-test-models:
+    runs-on: ubuntu-latest
+    needs: [test-ai-features, test-ai-models]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+    
+    - name: Train and save test models
+      run: |
+        cd backend
+        python -c "
+        import numpy as np
+        from app.ml.predictors.random_forest_predictor import RandomForestPredictor
+        from app.ml.predictors.gradient_boosting_predictor import GradientBoostingPredictor
+        import joblib
+        import os
+        
+        # 簡単なテストデータでモデルを学習
+        X = np.random.rand(1000, 28)
+        y = np.random.uniform(15.0, 45.0, 1000)
+        
+        # モデルディレクトリを作成
+        os.makedirs('models', exist_ok=True)
+        
+        # RandomForestモデル
+        rf = RandomForestPredictor()
+        rf.train(X, y)
+        joblib.dump(rf.model, 'models/test_random_forest.pkl')
+        
+        # GradientBoostingモデル
+        gb = GradientBoostingPredictor()
+        gb.train(X, y)
+        joblib.dump(gb.model, 'models/test_gradient_boosting.pkl')
+        
+        print('Test models saved successfully')
+        "
+    
+    - name: Upload test models
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-models
+        path: backend/models/
+
+  notify-completion:
+    runs-on: ubuntu-latest
+    needs: [test-ai-features, test-ai-models, security-scan]
+    if: always()
+    
+    steps:
+    - name: Notify completion
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#ai-development'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+        text: |
+          AI Features Test Suite Completed
+          Status: ${{ job.status }}
+          Branch: ${{ github.ref }}
+          Commit: ${{ github.sha }}

@@ -1,0 +1,115 @@
+{
+  "model_performance": {
+    "1500m": {
+      "mse": 6.1202325801247275,
+      "r2": 0.9986376127946043,
+      "rmse": 2.4739103823955966
+    },
+    "10kmroad": {
+      "mse": 0.0,
+      "r2": 1.0,
+      "rmse": 0.0
+    },
+    "3000m": {
+      "mse": 0.0,
+      "r2": 1.0,
+      "rmse": 0.0
+    },
+    "marathon": {
+      "mse": 260.8448234853487,
+      "r2": 0.9999775414504727,
+      "rmse": 16.150691114789755
+    },
+    "800m": {
+      "mse": 0.0007315076667930061,
+      "r2": 0.999999557441638,
+      "rmse": 0.02704639840705239
+    },
+    "10000m": {
+      "mse": 0.0,
+      "r2": 1.0,
+      "rmse": 0.0
+    },
+    "5000m": {
+      "mse": 5.252733954162404,
+      "r2": 0.9999126024273204,
+      "rmse": 2.291884367537421
+    },
+    "5kmroad": {
+      "mse": 0.0,
+      "r2": 1.0,
+      "rmse": 0.0
+    },
+    "halfmarathon": {
+      "mse": 0.0,
+      "r2": 1.0,
+      "rmse": 0.0
+    }
+  },
+  "feature_importance": {
+    "1500m": {
+      "age": 0.00146324562738433,
+      "gender": 0.0,
+      "competition_level": 0.0,
+      "vo2max": 0.2698295330817864,
+      "training_frequency": 0.006118939317837815,
+      "strength_frequency": 0.0003425019325240488,
+      "weekly_distance": 0.1504199146065322,
+      "monthly_distance": 0.34382436791981913,
+      "long_run_distance": 0.228001497514116
+    },
+    "10kmroad": {
+      "age": 0.0,
+      "gender": 0.0,
+      "competition_level": 0.0,
+      "vo2max": 0.0,
+      "running_history": 0.0,
+      "resting_hr": 0.0,
+      "weekly_distance": 0.0,
+      "monthly_distance": 0.0,
+      "long_run_pace": 0.0
+    },
+    "3000m": {
+      "competition_level": 0.0,
+      "training_frequency": 0.0,
+      "resting_hr": 0.0,
+      "weekly_distance": 0.0,
+      "monthly_distance": 0.0
+    },
+    "10000m": {
+      "gender": 0.0,
+      "competition_level": 0.0,
+      "weekly_distance": 0.0,
+      "monthly_distance": 0.0,
+      "long_run_distance": 0.0
+    },
+    "5kmroad": {
+      "gender": 0.0,
+      "competition_level": 0.0,
+      "vo2max": 0.0,
+      "running_history": 0.0,
+      "resting_hr": 0.0,
+      "weekly_distance": 0.0,
+      "monthly_distance": 0.0
+    },
+    "halfmarathon": {
+      "age": 0.0,
+      "weekly_distance": 0.0,
+      "monthly_distance": 0.0,
+      "long_run_distance": 0.0,
+      "long_run_pace": 0.0
+    }
+  },
+  "event_distances": {
+    "800m": 0.8,
+    "1500m": 1.5,
+    "3000m": 3.0,
+    "5000m": 5.0,
+    "10000m": 10.0,
+    "5kmroad": 5.0,
+    "10kmroad": 10.0,
+    "halfmarathon": 21.1,
+    "marathon": 42.2
+  },
+  "trained_at": "2025-09-27T13:32:53.008179"
+}

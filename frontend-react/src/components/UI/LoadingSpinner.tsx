@@ -25,17 +25,24 @@ export function LoadingSpinner({
 }: LoadingSpinnerProps) {
   const spinner = (
     <div className={`flex flex-col items-center justify-center ${className}`}>
-      <Loader2 className={`animate-spin text-blue-600 ${sizeClasses[size]}`} />
+      <div className="relative">
+        <Loader2 className={`animate-spin text-primary-500 ${sizeClasses[size]}`} />
+        <div className={`absolute inset-0 animate-pulse ${sizeClasses[size]}`}>
+          <div className="w-full h-full rounded-full bg-gradient-primary opacity-20"></div>
+        </div>
+      </div>
       {text && (
-        <p className="mt-2 text-sm text-gray-600">{text}</p>
+        <p className="mt-4 text-sm font-medium text-neutral-600 animate-fade-in">{text}</p>
       )}
     </div>
   )
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
-        {spinner}
+      <div className="fixed inset-0 bg-gradient-to-br from-white via-primary-50/30 to-white backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="card-elevated max-w-sm w-full mx-4 text-center">
+          {spinner}
+        </div>
       </div>
     )
   }
@@ -46,8 +53,10 @@ export function LoadingSpinner({
 // ページ全体のローディング
 export function PageLoadingSpinner({ text = '読み込み中...' }: { text?: string }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <LoadingSpinner size="xl" text={text} />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-50 via-white to-primary-50">
+      <div className="card-elevated max-w-md w-full mx-4 text-center">
+        <LoadingSpinner size="xl" text={text} />
+      </div>
     </div>
   )
 }

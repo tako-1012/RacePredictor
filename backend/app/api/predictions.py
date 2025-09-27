@@ -9,6 +9,8 @@ from app.core.security import get_current_user_from_token
 from app.models.prediction import Prediction
 from app.schemas.prediction import PredictionCreate, PredictionResponse, PredictionResult
 from app.services.prediction_engine import PredictionEngine
+from app.services.ai_prediction_engine import AIPredictionEngine
+from app.services.model_training_service import ModelTrainingService
 
 router = APIRouter()
 
@@ -19,16 +21,26 @@ async def calculate_prediction(
     current_user = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
-    """予測計算"""
+    """AI予測計算"""
     try:
-        # 予測エンジン初期化
-        engine = PredictionEngine(db)
-
-        # 予測計算実行
-        predicted_time, confidence, base_info = engine.predict_time(
-            current_user,
-            prediction_data.target_event
-        )
+        # AI予測エンジンを優先使用
+        ai_engine = AIPredictionEngine(db)
+        
+        try:
+            # AI予測を試行
+            predicted_time, confidence, base_info = ai_engine.predict_time(
+                current_user,
+                prediction_data.target_event
+            )
+            model_version = "v2_ai_ensemble"
+        except Exception as ai_error:
+            # AI予測が失敗した場合は統計的予測にフォールバック
+            engine = PredictionEngine(db)
+            predicted_time, confidence, base_info = engine.predict_time(
+                current_user,
+                prediction_data.target_event
+            )
+            model_version = "v1_statistical_fallback"
 
         # 予測結果をDBに保存
         db_prediction = Prediction(
@@ -37,7 +49,7 @@ async def calculate_prediction(
             target_event=prediction_data.target_event.value,
             predicted_time_seconds=predicted_time,
             confidence_level=confidence,
-            model_version="v1_statistical",
+            model_version=model_version,
             base_workouts=base_info
         )
 
@@ -63,6 +75,74 @@ async def calculate_prediction(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to calculate prediction"
+        )
+
+
+@router.post("/train-model")
+async def train_model(
+    target_event: str,
+    current_user = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db)
+):
+    """機械学習モデルの学習"""
+    try:
+        # 管理者権限チェック（簡易実装）
+        # 実際の実装では適切な権限管理を行う
+        
+        training_service = ModelTrainingService(db)
+        
+        # TargetEventEnumに変換
+        try:
+            event_enum = TargetEventEnum(target_event)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid target event: {target_event}"
+            )
+        
+        # モデル学習実行
+        result = training_service.train_models_for_event(event_enum)
+        
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to train model: {str(e)}"
+        )
+
+
+@router.get("/model-performance/{target_event}")
+async def get_model_performance(
+    target_event: str,
+    current_user = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db)
+):
+    """モデルの性能情報を取得"""
+    try:
+        training_service = ModelTrainingService(db)
+        
+        # TargetEventEnumに変換
+        try:
+            event_enum = TargetEventEnum(target_event)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid target event: {target_event}"
+            )
+        
+        performance = training_service.get_model_performance(event_enum)
+        
+        return performance
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get model performance: {str(e)}"
         )
 
 

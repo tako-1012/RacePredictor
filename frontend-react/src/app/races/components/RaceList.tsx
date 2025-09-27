@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Race, RaceType, PaginationParams } from '@/types'
 import { formatDistance, formatPace, formatTime } from '@/lib/utils'
 import { ConfirmDialog } from '@/components/UI/ConfirmDialog'
+import { ResponsiveTable, createTableColumns } from '@/components/UI/ResponsiveTable'
 
 interface RaceListProps {
   races: Race[]

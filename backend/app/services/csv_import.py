@@ -171,7 +171,7 @@ def validate_japanese_text(text: str) -> bool:
 class CSVImportService:
     """CSV インポートサービス"""
 
-    # Garminカラムマッピング
+    # Garminカラムマッピング（正しい日本語）
     GARMIN_COLUMNS = {
         'ラップ数': 'lap_number',
         'タイム': 'lap_time',
@@ -202,20 +202,79 @@ class CSVImportService:
         '平均ステップスピードロスcm/秒': 'avg_step_speed_loss',
         '平均ステップスピードロス率%': 'avg_step_speed_loss_rate'
     }
+    
+    # 文字化けヘッダーのマッピング（実際のCSVファイルから抽出）
+    GARBLED_HEADER_MAPPING = {
+        # ラップ数関連
+        '郢晢ｽｩ郢昴・繝ｻ隰ｨ・ｰ': 'lap_number',  # ラップ数
+        '郢ｧ・ｿ郢ｧ・､郢晢｣ｰ': 'lap_time',  # タイム
+        '驍擾ｽｯ驕ｨ閧ｴ蜃ｾ鬮｢繝ｻ': 'total_time',  # 累積時間
+        
+        # 距離・ペース関連
+        '髴肴辨螻ｬkm': 'distance_km',  # 距離km
+        '陝ｷ・ｳ陜ｮ繝ｻ繝ｻ郢晢ｽｼ郢ｧ・ｹ陋ｻ繝ｻ・ｼ邵ｮm': 'avg_pace_min_km',  # 平均ペース分／km
+        '陷搾ｽｾ鬩溷ｴ趣ｽｪ・ｿ隰ｨ・ｴ陟募ｾ後・郢晏｣ｹ繝ｻ郢ｧ・ｹ繝ｻ繝ｻAP繝ｻ迚呻ｽｹ・ｳ陜ｮ繝ｻ繝ｻ繝ｻ邵ｮm': 'avg_gap_min_km',  # GAP平均分／km
+        
+        # 心拍数関連
+        '陝ｷ・ｳ陜ｮ繝ｻ迚幄ｬｨ・ｰbpm': 'avg_heart_rate',  # 平均心拍数bpm
+        '隴崢陞滂ｽｧ陟｢繝ｻ迚幄ｬｨ・ｰbpm': 'max_heart_rate',  # 最大心拍数bpm
+        
+        # パワー関連
+        '陝ｷ・ｳ陜ｮ繝ｻ繝ｱ郢晢ｽｯ郢晢ｽｼW': 'avg_power',  # 平均パワーW
+        '陝ｷ・ｳ陜ｮ竇｣/kg': 'avg_power_per_kg',  # 平均W/kg
+        '隴崢陞滂ｽｧ郢昜ｻ｣ﾎ｡郢晢ｽｼW': 'max_power',  # 最大パワーW
+        '隴崢陞滂ｽｧW/kg': 'max_power_per_kg',  # 最大W/kg
+        
+        # その他の指標
+        '陝ｷ・ｳ陜ｮ繝ｻ繝ｴ郢昴・繝｡spm': 'avg_cadence',  # 平均ピッチspm
+        '陝ｷ・ｳ陜ｮ繝ｻ逎∬舉・ｰ隴弱ｋ菫｣ms': 'avg_ground_contact_time',  # 平均接地時間ms
+        '陝ｷ・ｳ陜ｮ竭ｧCT郢晁・ﾎ帷ｹ晢ｽｳ郢ｧ・ｹ%': 'avg_gct_balance',  # 平均GCTバランス%
+        '陝ｷ・ｳ陜ｮ繝ｻ・ｭ・ｩ陝ｷ繝ｻ': 'avg_stride_length',  # 平均歩幅m
+        '陝ｷ・ｳ陜ｮ繝ｻ・ｸ雍具ｽｸ蜿･陌喞m': 'avg_vertical_oscillation',  # 平均上下動cm
+        '陝ｷ・ｳ陜ｮ繝ｻ・ｸ雍具ｽｸ蜿･陌夊ｱ医・': 'avg_vertical_ratio',  # 平均上下動比%
+        '郢ｧ・ｫ郢晢ｽｭ郢晢ｽｪ郢晢ｽｼC': 'calories',  # カロリーC
+        '陝ｷ・ｳ陜ｮ繝ｻ・ｰ邇ｲ・ｸ・ｩ': 'avg_temperature',  # 平均気温
+        '隴崢鬯ｮ蛟･繝ｻ郢晢ｽｼ郢ｧ・ｹ陋ｻ繝ｻ・ｼ邵ｮm': 'best_pace_min_km',  # 最高ペース分／km
+        '隴崢鬯ｮ蛟･繝ｴ郢昴・繝｡spm': 'max_cadence',  # 最高ピッチspm
+        '驕假ｽｻ陷榊｢灘・鬮｢繝ｻ': 'moving_time',  # 移動時間
+        '陝ｷ・ｳ陜ｮ繝ｻ・ｧ・ｻ陷崎ｼ斐・郢晢ｽｼ郢ｧ・ｹ陋ｻ繝ｻ・ｼ邵ｮm': 'avg_moving_pace',  # 平均移動ペース分／km
+        '陝ｷ・ｳ陜ｮ繝ｻ縺帷ｹ昴・繝｣郢晏干縺帷ｹ晄鱒繝ｻ郢晏ｳｨﾎ溽ｹｧ・ｹcm/驕倥・': 'avg_step_speed_loss',  # 平均ステップスピードロスcm/秒
+        '陝ｷ・ｳ陜ｮ繝ｻ縺帷ｹ昴・繝｣郢晏干縺帷ｹ晄鱒繝ｻ郢晏ｳｨﾎ溽ｹｧ・ｹ驍・・': 'avg_step_speed_loss_rate',  # 平均ステップスピードロス率%
+    }
 
     def __init__(self):
         self.supported_encodings = ['utf-8', 'shift_jis', 'cp932', 'euc-jp']
 
     def is_garbled_text(self, text: str) -> bool:
-        """文字化けテキストを検出"""
-        # 文字化け特徴パターン
+        """文字化けテキストを検出（強化版）"""
+        if not text or len(text.strip()) == 0:
+            return False
+            
+        # 文字化け特徴パターン（拡張版）
         garbled_patterns = [
-            'ｽ', 'ｯ', '・', '郢', '繝', '隰', '昴', '晢',  # よくある文字化け文字
-            '・ｻ', '・ｿ', '・ｰ', '・ｳ', '・ｱ',  # 半角カナ文字化け
+            # よくある文字化け文字
+            'ｽ', 'ｯ', '・', '郢', '繝', '隰', '昴', '晢', '驍', '擾', '驕', '閧', '蜃', '鬮', '髴', '肴', '辨', '螻',
+            '陝', '陜', '邵', '陷', '搾', '鬩', '溷', '趣', '隰', '陟', '募', '晏', '迚', '呻', '幄', '崢', '鬯', '崢',
+            '荳', '茨', '鬆', '代', '鬩', '蝪', '遏', '蜑', '竇', '帷', '晁', '帷', '晢', '竭', '雍', '具', '蜿', '陌',
+            '喞', '夊', '医', '邇', '邇', '假', '榊', '灘', '鬮', '崎', '斐', '帷', '帷', '帷', '帷', '帷', '帷',
+            # 半角カナ文字化け
+            '・ｻ', '・ｿ', '・ｰ', '・ｳ', '・ｱ', '・､', '・｣', '・ｧ', '・ｨ', '・ｩ', '・ｪ', '・ｫ', '・ｬ', '・ｭ', '・ｮ', '・ｯ',
+            # その他の文字化けパターン
+            '繝ｻ', '繝ｻ', '繝ｻ', '繝ｻ', '繝ｻ', '繝ｻ', '繝ｻ', '繝ｻ', '繝ｻ', '繝ｻ',
+            '郢晢', '郢晢', '郢晢', '郢晢', '郢晢', '郢晢', '郢晢', '郢晢', '郢晢', '郢晢',
         ]
 
         # 文字化けパターンが含まれているか
         has_garbled = any(pattern in text for pattern in garbled_patterns)
+        
+        # 追加チェック: 連続する文字化け文字の検出
+        garbled_sequence_patterns = [
+            '郢晢ｽｩ郢昴・繝ｻ隰ｨ・ｰ',  # 典型的なGarminヘッダーの文字化け
+            '驍擾ｽｯ驕ｨ閧ｴ蜃ｾ鬮｢繝ｻ',  # 距離関連の文字化け
+            '陝ｷ・ｳ陜ｮ繝ｻ繝ｻ郢晢ｽｼ郢ｧ・ｹ陋ｻ繝ｻ・ｼ邵ｮm',  # ペース関連の文字化け
+        ]
+        
+        has_sequence_garbled = any(pattern in text for pattern in garbled_sequence_patterns)
 
         # 異常に多くの半角文字が含まれているか（日本語なのに）
         half_width_count = sum(1 for c in text if ord(c) < 256)
@@ -228,16 +287,79 @@ class CSVImportService:
         return has_garbled
 
     def detect_encoding(self, file_content: bytes) -> str:
-        """エンコーディング自動判定（完全版）"""
+        """エンコーディング自動判定（完全版 + 自動修正）"""
         # 新しい堅牢なエンコーディング検出を使用
         detected_encoding = detect_encoding_robust(file_content)
         
-        # 追加の検証: CSV読み込みテスト
+        # 自動修正機能: 複数のエンコーディングを試行
+        best_encoding = self._auto_fix_encoding(file_content, detected_encoding)
+        
+        if best_encoding:
+            logging.info(f"自動修正でエンコーディング確定: {best_encoding}")
+            return best_encoding
+        
+        # フォールバック: 従来の方法
+        fallback_encoding = self._fallback_encoding_detection(file_content)
+        logging.info(f"フォールバックエンコーディング採用: {fallback_encoding}")
+        return fallback_encoding
+    
+    def _auto_fix_encoding(self, file_content: bytes, initial_encoding: str) -> str:
+        """文字化け自動修正: 複数のエンコーディングを試行して最適なものを選択"""
+        # 試行するエンコーディングの優先順位（日本語CSVに最適化）
+        candidate_encodings = [
+            'shift_jis',  # Garminデバイスでよく使用
+            'cp932',      # Windows環境のShift_JIS拡張
+            'utf-8-sig',  # BOM付きUTF-8
+            'utf-8',      # 標準UTF-8
+            'euc-jp',     # Unix/Linux環境
+            'iso2022_jp', # JIS規格
+            initial_encoding,  # 最初に検出されたエンコーディング
+            'shift_jis',       # Shift_JIS
+            'cp932',          # CP932 (Windows)
+            'utf-8-sig',      # UTF-8 with BOM
+            'utf-8',          # UTF-8
+            'euc-jp',         # EUC-JP
+            'iso-2022-jp',    # ISO-2022-JP
+        ]
+        
+        # 重複を除去
+        candidate_encodings = list(dict.fromkeys(candidate_encodings))
+        
+        best_score = 0
+        best_encoding = None
+        
+        for encoding in candidate_encodings:
+            try:
+                score = self._evaluate_encoding_quality(file_content, encoding)
+                logging.info(f"エンコーディング {encoding} のスコア: {score}")
+                
+                if score > best_score:
+                    best_score = score
+                    best_encoding = encoding
+                    
+            except Exception as e:
+                logging.warning(f"エンコーディング {encoding} の評価失敗: {e}")
+                continue
+        
+        # スコアが閾値以上の場合のみ採用（閾値を下げてより積極的に自動修正）
+        if best_score >= 0.5:  # 50%以上のスコアで採用
+            logging.info(f"自動修正成功: {best_encoding} (スコア: {best_score:.2f})")
+            return best_encoding
+        
+        return None
+    
+    def _evaluate_encoding_quality(self, file_content: bytes, encoding: str) -> float:
+        """エンコーディングの品質をスコア化（0.0-1.0）"""
         try:
-            df_test = pd.read_csv(io.BytesIO(file_content), encoding=detected_encoding, nrows=0)
+            df_test = pd.read_csv(io.BytesIO(file_content), encoding=encoding, nrows=0)
             columns = df_test.columns.tolist()
             
-            # 日本語カラム名の妥当性チェック
+            if not columns:
+                return 0.0
+            
+            score = 0.0
+            
+            # 1. 日本語カラム名の妥当性チェック (40%)
             valid_japanese_count = 0
             garbled_columns = []
             for col in columns:
@@ -247,30 +369,31 @@ class CSVImportService:
                 elif not validate_japanese_text(col_str):
                     garbled_columns.append(col_str)
             
-            # Garmin日本語カラム名の完全一致チェック
+            japanese_score = valid_japanese_count / len(columns) if columns else 0
+            score += japanese_score * 0.4
+            
+            # 2. Garmin日本語カラム名の完全一致チェック (30%)
             garmin_japanese_columns = ['ラップ数', 'タイム', '平均ペース分／km', '平均心拍数bpm', '距離km', '累積時間']
             exact_matches = sum(1 for col in garmin_japanese_columns if col in columns)
+            garmin_score = exact_matches / len(garmin_japanese_columns)
+            score += garmin_score * 0.3
             
-            logging.info(f"エンコーディング検証: {detected_encoding}, 日本語カラム: {valid_japanese_count}, Garmin一致: {exact_matches}")
+            # 3. 文字化けの少なさ (20%)
+            garbled_score = 1.0 - (len(garbled_columns) / len(columns)) if columns else 0
+            score += garbled_score * 0.2
             
-            if garbled_columns:
-                logging.warning(f"文字化けカラム検出: {garbled_columns}")
+            # 4. 一般的な日本語単語の存在 (10%)
+            common_japanese_words = ['時間', '距離', 'ペース', '心拍', 'ラップ', '平均', '最大', '最小']
+            word_matches = sum(1 for word in common_japanese_words 
+                             if any(word in str(col) for col in columns))
+            word_score = word_matches / len(common_japanese_words)
+            score += word_score * 0.1
             
-            # 検出結果が妥当な場合
-            if valid_japanese_count > 0 and exact_matches > 0 and not garbled_columns:
-                logging.info(f"エンコーディング確定: {detected_encoding}")
-                return detected_encoding
-            elif exact_matches > 0:
-                logging.info(f"Garminカラム一致でエンコーディング採用: {detected_encoding}")
-                return detected_encoding
+            return min(score, 1.0)  # 最大1.0に制限
             
         except Exception as e:
-            logging.warning(f"CSV読み込みテスト失敗: {e}")
-        
-        # フォールバック: 従来の方法
-        fallback_encoding = self._fallback_encoding_detection(file_content)
-        logging.info(f"フォールバックエンコーディング採用: {fallback_encoding}")
-        return fallback_encoding
+            logging.warning(f"エンコーディング品質評価エラー ({encoding}): {e}")
+            return 0.0
     
     def _fallback_encoding_detection(self, file_content: bytes) -> str:
         """フォールバック用のエンコーディング検出"""
@@ -341,10 +464,113 @@ class CSVImportService:
 
         return 'unknown'
 
-    def estimate_workout_type(self, row_data: Dict) -> str:
-        """練習種別推定（控えめ）- 最終決定はユーザーに委ねる"""
-        # データベース上のデフォルトとして軽い推定のみ
-        return 'ジョギング'  # ユーザーがインポート時に適切な種別を選択
+    def estimate_workout_type(self, df: pd.DataFrame) -> str:
+        """CSVデータから練習種別を自動推定"""
+        try:
+            # ラップ分析データから判定
+            if 'lap_analysis' in df.columns or hasattr(df, 'lap_analysis'):
+                lap_data = getattr(df, 'lap_analysis', [])
+                if lap_data:
+                    return self._analyze_lap_pattern(lap_data)
+            
+            # カラム名から判定
+            columns = df.columns.tolist()
+            
+            # インターバル練習の判定
+            if any('ラップ' in str(col) for col in columns):
+                return self._analyze_interval_pattern(df)
+            
+            # 距離と時間から判定
+            if '距離' in str(columns) or 'distance' in str(columns).lower():
+                return self._analyze_distance_pattern(df)
+            
+            # デフォルト
+            return 'ジョギング'
+            
+        except Exception as e:
+            logging.warning(f"練習種別推定エラー: {e}")
+            return 'ジョギング'
+    
+    def _analyze_lap_pattern(self, lap_data: List[Dict]) -> str:
+        """ラップデータから練習種別を判定"""
+        if not lap_data:
+            return 'ジョギング'
+        
+        # ラップ数の分析
+        lap_count = len([lap for lap in lap_data if lap.get('ラップ数', '').isdigit()])
+        
+        # ペースのばらつき分析
+        paces = []
+        for lap in lap_data:
+            pace_str = lap.get('平均ペース', '') or lap.get('pace', '')
+            if pace_str and pace_str != '-':
+                pace_seconds = self.parse_pace_string(pace_str)
+                if pace_seconds:
+                    paces.append(pace_seconds)
+        
+        if not paces:
+            return 'ジョギング'
+        
+        # ペースのばらつきを計算
+        pace_variance = np.var(paces) if len(paces) > 1 else 0
+        pace_mean = np.mean(paces)
+        
+        # 判定ロジック
+        if lap_count >= 8 and pace_variance > 100:  # 8本以上でペースにばらつき
+            return 'インターバル練習'
+        elif lap_count >= 4 and pace_variance > 50:  # 4-7本でペースにばらつき
+            return 'レペティション練習'
+        elif pace_mean < 300:  # 平均ペースが5分/km未満
+            return 'テンポ走'
+        else:
+            return 'ジョギング'
+    
+    def _analyze_interval_pattern(self, df: pd.DataFrame) -> str:
+        """インターバルパターンから練習種別を判定"""
+        try:
+            # ラップ数の分析
+            lap_counts = []
+            for _, row in df.iterrows():
+                lap_num = str(row.get('ラップ数', '')).strip()
+                if lap_num.isdigit():
+                    lap_counts.append(int(lap_num))
+            
+            if lap_counts:
+                max_laps = max(lap_counts)
+                if max_laps >= 8:
+                    return 'インターバル練習'
+                elif max_laps >= 4:
+                    return 'レペティション練習'
+            
+            return 'テンポ走'
+        except:
+            return 'ジョギング'
+    
+    def _analyze_distance_pattern(self, df: pd.DataFrame) -> str:
+        """距離パターンから練習種別を判定"""
+        try:
+            # 総距離の分析
+            total_distance = 0
+            for _, row in df.iterrows():
+                distance_str = str(row.get('距離', '') or row.get('distance', '')).strip()
+                if distance_str and distance_str != '-':
+                    # km単位を想定
+                    distance_km = float(distance_str.replace('km', '').replace('m', ''))
+                    if 'm' in distance_str and 'km' not in distance_str:
+                        distance_km = distance_km / 1000  # mをkmに変換
+                    total_distance += distance_km
+            
+            # 距離による判定
+            if total_distance >= 20:
+                return 'ロングジョグ'
+            elif total_distance >= 10:
+                return 'ジョギング'
+            elif total_distance >= 5:
+                return 'テンポ走'
+            else:
+                return 'ジョギング'
+        except:
+            return 'ジョギング'
 
     def estimate_intensity(self, row_data: Dict) -> int:
         """強度推定（控えめ）- 最終決定はユーザーに委ねる"""
@@ -548,7 +774,7 @@ class CSVImportService:
 
         return lap_analysis
 
-    def preview_data(self, file_content: bytes, max_rows: int = None) -> Tuple[bool, str, Dict]:
+    def preview_data(self, file_content: bytes, encoding: str = None, max_rows: int = None) -> Tuple[bool, str, Dict]:
         """
         CSVデータのプレビュー（強化版エラーハンドリング）
 
@@ -559,34 +785,58 @@ class CSVImportService:
         start_time = time.time()
         
         try:
-            # エンコーディング検出
-            encoding = self.detect_encoding(file_content)
-            logging.info(f"検出されたエンコーディング: {encoding}")
+            # エンコーディング検出（指定されていない場合のみ）
+            if not encoding:
+                encoding = self.detect_encoding(file_content)
+                logging.info(f"検出されたエンコーディング: {encoding}")
+            else:
+                logging.info(f"指定されたエンコーディング: {encoding}")
 
             # CSV読み込み（複数のエラーハンドリング戦略）
             df = self._read_csv_with_fallback(file_content, encoding)
             
             if df is None or df.empty:
+                logging.error("CSVファイルが空または読み込めませんでした")
                 return False, "CSVファイルが空または読み込めませんでした", {}
+            
+            # デバッグ情報: カラム名をログ出力
+            logging.info(f"読み込まれたカラム: {df.columns.tolist()}")
+            logging.info(f"データ行数: {len(df)}")
 
+            # 文字化けヘッダーの自動修正
+            df = self._fix_garbled_headers(df)
+            
             # カラム名の妥当性チェック
             columns = df.columns.tolist()
             garbled_columns = []
             warnings = []
+            valid_japanese_count = 0
+            exact_matches = 0
+            
+            # Garmin日本語カラム名の完全一致チェック
+            garmin_japanese_columns = ['ラップ数', 'タイム', '平均ペース分／km', '平均心拍数bpm', '距離km', '累積時間']
             
             for col in columns:
                 col_str = str(col)
-                if not validate_japanese_text(col_str):
+                if validate_japanese_text(col_str) and any(ord(c) > 127 for c in col_str):
+                    valid_japanese_count += 1
+                elif not validate_japanese_text(col_str):
                     garbled_columns.append(col_str)
+                
+                # Garminカラム名の一致チェック
+                if col_str in garmin_japanese_columns:
+                    exact_matches += 1
             
             if garbled_columns:
                 logging.warning(f"文字化けが検出されたカラム: {garbled_columns}")
-                warnings.append({
-                    "type": "garbled_columns",
-                    "message": f"文字化けが検出されたカラムがあります: {', '.join(garbled_columns)}",
-                    "affected_columns": garbled_columns,
-                    "severity": "warning"
-                })
+                # 自動修正が成功した場合は警告を出さない
+                if not (valid_japanese_count > 0 and exact_matches > 0):
+                    warnings.append({
+                        "type": "garbled_columns",
+                        "message": f"文字化けが検出されたカラムがあります: {', '.join(garbled_columns)}",
+                        "affected_columns": garbled_columns,
+                        "severity": "warning"
+                    })
 
             # フォーマット判定
             format_type = self.determine_format(df)
@@ -619,6 +869,9 @@ class CSVImportService:
                 lap_analysis = self.analyze_laps(df)
                 dash_count = sum(1 for lap in lap_analysis if lap.get('判定') == 'ダッシュ')
 
+            # 練習種別の自動推定
+            estimated_workout_type = self.estimate_workout_type(df)
+
             processing_time = int((time.time() - start_time) * 1000)
 
             preview_info = {
@@ -631,6 +884,7 @@ class CSVImportService:
                 'sample_data': sample_data,
                 'lap_analysis': lap_analysis,
                 'dash_count': dash_count,
+                'estimated_workout_type': estimated_workout_type,
                 'garbled_columns': garbled_columns if garbled_columns else None,
                 'warnings': warnings,
                 'processing_time_ms': processing_time,
@@ -790,3 +1044,55 @@ class CSVImportService:
         except Exception as e:
             logging.error(f"すべての読み込み試行が失敗: {e}")
             return None
+    
+    def _fix_garbled_headers(self, df: pd.DataFrame) -> pd.DataFrame:
+        """文字化けヘッダーを自動修正"""
+        new_columns = []
+        fixed_count = 0
+        
+        for col in df.columns:
+            col_str = str(col)
+            
+            # 文字化けヘッダーのマッピングをチェック
+            if col_str in self.GARBLED_HEADER_MAPPING:
+                mapped_name = self.GARBLED_HEADER_MAPPING[col_str]
+                new_columns.append(mapped_name)
+                fixed_count += 1
+                logging.info(f"文字化けヘッダー修正: '{col_str}' -> '{mapped_name}'")
+            else:
+                # 部分マッチング（文字化けパターンが含まれている場合）
+                mapped_name = self._partial_garbled_mapping(col_str)
+                if mapped_name:
+                    new_columns.append(mapped_name)
+                    fixed_count += 1
+                    logging.info(f"部分マッチング修正: '{col_str}' -> '{mapped_name}'")
+                else:
+                    new_columns.append(col_str)
+        
+        if fixed_count > 0:
+            df.columns = new_columns
+            logging.info(f"文字化けヘッダー修正完了: {fixed_count}個のカラムを修正")
+        
+        return df
+    
+    def _partial_garbled_mapping(self, garbled_header: str) -> str:
+        """部分的な文字化けマッピング"""
+        # キーワードベースの部分マッチング
+        keyword_mappings = {
+            'km': 'distance_km',
+            'bpm': 'avg_heart_rate',
+            'W': 'avg_power',
+            'spm': 'avg_cadence',
+            'ms': 'avg_ground_contact_time',
+            '%': 'avg_gct_balance',
+            'C': 'calories',
+            'm': 'avg_stride_length',
+            'cm': 'avg_vertical_oscillation',
+        }
+        
+        # キーワードが含まれているかチェック
+        for keyword, mapped_name in keyword_mappings.items():
+            if keyword in garbled_header:
+                return mapped_name
+        
+        return None

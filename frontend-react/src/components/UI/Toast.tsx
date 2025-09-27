@@ -64,23 +64,23 @@ export function useToast() {
   return context
 }
 
-// 便利な関数
-export const toast = {
-  success: (title: string, message?: string, options?: Partial<Toast>) => {
-    const { addToast } = useToast()
-    addToast({ type: 'success', title, message, ...options })
-  },
-  error: (title: string, message?: string, options?: Partial<Toast>) => {
-    const { addToast } = useToast()
-    addToast({ type: 'error', title, message, duration: 7000, ...options })
-  },
-  warning: (title: string, message?: string, options?: Partial<Toast>) => {
-    const { addToast } = useToast()
-    addToast({ type: 'warning', title, message, ...options })
-  },
-  info: (title: string, message?: string, options?: Partial<Toast>) => {
-    const { addToast } = useToast()
-    addToast({ type: 'info', title, message, ...options })
+// 便利な関数（コンポーネント内でのみ使用可能）
+export const useToastHelpers = () => {
+  const { addToast } = useToast()
+  
+  return {
+    success: (title: string, message?: string, options?: Partial<Toast>) => {
+      addToast({ type: 'success', title, message, ...options })
+    },
+    error: (title: string, message?: string, options?: Partial<Toast>) => {
+      addToast({ type: 'error', title, message, duration: 7000, ...options })
+    },
+    warning: (title: string, message?: string, options?: Partial<Toast>) => {
+      addToast({ type: 'warning', title, message, ...options })
+    },
+    info: (title: string, message?: string, options?: Partial<Toast>) => {
+      addToast({ type: 'info', title, message, ...options })
+    }
   }
 }
 

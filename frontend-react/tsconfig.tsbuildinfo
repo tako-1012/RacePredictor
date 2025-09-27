@@ -1,0 +1,10 @@
+{
+  "program": {
+    "fileInfos": {},
+    "semanticDiagnosticsPerFile": [],
+    "options": {
+      "configFilePath": "/home/kotaro/RacePredictor/frontend-react/tsconfig.json"
+    }
+  },
+  "version": "5.0.4"
+}

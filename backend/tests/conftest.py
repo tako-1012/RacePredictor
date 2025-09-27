@@ -2,14 +2,16 @@
 テスト設定とフィクスチャ
 """
 import pytest
+import pytest_asyncio
 import asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 import tempfile
 import os
-from typing import Generator
+from typing import Generator, AsyncGenerator
 
 from app.main import app
 from app.core.database import get_db, Base
@@ -18,6 +20,7 @@ from app.core.config import settings
 
 # テスト用データベース設定
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+SQLALCHEMY_ASYNC_DATABASE_URL = "sqlite+aiosqlite:///./test_async.db"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
@@ -25,7 +28,16 @@ engine = create_engine(
     poolclass=StaticPool,
 )
 
+async_engine = create_async_engine(
+    SQLALCHEMY_ASYNC_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+AsyncTestingSessionLocal = async_sessionmaker(
+    async_engine, class_=AsyncSession, expire_on_commit=False
+)
 
 
 def override_get_db():
@@ -61,16 +73,20 @@ def client():
     Base.metadata.drop_all(bind=engine)
 
 
-@pytest.fixture(scope="function")
-def db_session():
-    """データベースセッションフィクスチャ"""
-    Base.metadata.create_all(bind=engine)
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-        Base.metadata.drop_all(bind=engine)
+@pytest_asyncio.fixture(scope="function")
+async def async_db_session() -> AsyncGenerator[AsyncSession, None]:
+    """非同期データベースセッションフィクスチャ"""
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    async with AsyncTestingSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+    
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 
 @pytest.fixture

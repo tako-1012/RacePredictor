@@ -7,6 +7,7 @@ import { apiClient, handleApiError } from '@/lib/api'
 import { CSVImportPreview, CSVImportResult } from '@/types'
 import { LoadingSpinner } from '@/components/UI/LoadingSpinner'
 import { Toast } from '@/components/UI/Toast'
+import { Breadcrumb } from '@/components/Layout/Breadcrumb'
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void
@@ -256,15 +257,6 @@ function ImportProgress({ result, onClose }: ImportProgressProps) {
 export default function ImportPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth()
   const router = useRouter()
-  
-  const [step, setStep] = useState<'upload' | 'preview' | 'import' | 'complete'>('upload')
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState<CSVImportPreview | null>(null)
-  const [importResult, setImportResult] = useState<CSVImportResult | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
-  const [isImporting, setIsImporting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   if (authLoading) {
     return <LoadingSpinner />
@@ -275,154 +267,83 @@ export default function ImportPage() {
     return null
   }
 
-  const handleFileSelect = async (file: File) => {
-    if (file.size > 10 * 1024 * 1024) {
-      setToast({ message: 'ファイルサイズが10MBを超えています', type: 'error' })
-      return
-    }
-
-    try {
-      setIsUploading(true)
-      setError(null)
-      setSelectedFile(file)
-
-      const formData = new FormData()
-      formData.append('file', file)
-      
-      const previewData = await apiClient.uploadCSV(formData)
-      setPreview(previewData)
-      setStep('preview')
-    } catch (err) {
-      const apiError = handleApiError(err)
-      setError(apiError.message)
-      setToast({ message: apiError.message, type: 'error' })
-    } finally {
-      setIsUploading(false)
-    }
-  }
-
-  const handleImport = async (mapping: Record<string, string>) => {
-    if (!selectedFile || !preview) return
-
-    try {
-      setIsImporting(true)
-      setError(null)
-      
-      const formData = new FormData()
-      formData.append('file', selectedFile)
-      formData.append('mapping', JSON.stringify(mapping))
-
-      const result = await apiClient.importCSV(formData)
-      setImportResult(result)
-      setStep('complete')
-    } catch (err) {
-      const apiError = handleApiError(err)
-      setError(apiError.message)
-      setToast({ message: apiError.message, type: 'error' })
-    } finally {
-      setIsImporting(false)
-    }
-  }
-
-  const handleClose = () => {
-    router.push('/races')
-  }
-
-  const handleBack = () => {
-    if (step === 'preview') {
-      setStep('upload')
-      setSelectedFile(null)
-      setPreview(null)
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* パンくずナビゲーション */}
+        <div className="mb-6">
+          <Breadcrumb />
+        </div>
+
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">CSVインポート</h1>
-          <p className="mt-2 text-gray-600">CSV/Excelファイルからレース結果を一括インポート</p>
+          <p className="mt-2 text-gray-600">インポートしたいデータの種類を選択してください</p>
         </div>
 
-        {/* ステップインジケーター */}
-        <div className="mb-8">
-          <nav className="flex items-center justify-center">
-            <div className="flex items-center space-x-4">
-              <div className={`flex items-center ${step === 'upload' ? 'text-blue-600' : 'text-gray-400'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step === 'upload' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
-                }`}>
-                  1
-                </div>
-                <span className="ml-2 text-sm font-medium">ファイルアップロード</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* 練習記録インポート */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="text-center">
+              <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <span className="text-2xl">🏃</span>
               </div>
-              <div className="w-8 h-0.5 bg-gray-300"></div>
-              <div className={`flex items-center ${step === 'preview' ? 'text-blue-600' : 'text-gray-400'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step === 'preview' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
-                }`}>
-                  2
-        </div>
-                <span className="ml-2 text-sm font-medium">プレビュー・マッピング</span>
-              </div>
-              <div className="w-8 h-0.5 bg-gray-300"></div>
-              <div className={`flex items-center ${step === 'complete' ? 'text-blue-600' : 'text-gray-400'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step === 'complete' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
-                }`}>
-                  3
-                </div>
-                <span className="ml-2 text-sm font-medium">インポート完了</span>
-              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">練習記録</h2>
+              <p className="text-gray-600 mb-6">
+                Garmin Connectやその他のランニングアプリからエクスポートした練習データをインポート
+              </p>
+              <button
+                onClick={() => router.push('/workouts/import')}
+                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                練習記録をインポート
+              </button>
             </div>
-          </nav>
           </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          {step === 'upload' && (
-            <FileUpload onFileSelect={handleFileSelect} isUploading={isUploading} />
-          )}
-
-          {step === 'preview' && preview && (
-            <div className="space-y-6">
-              <PreviewTable preview={preview} onMappingChange={handleImport} />
-              <div className="flex justify-between">
-                  <button
-                  onClick={handleBack}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                  >
-                  戻る
-                  </button>
-                  <button
-                  onClick={() => handleImport({})}
-                  disabled={isImporting}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50"
-                  >
-                  {isImporting ? 'インポート中...' : 'インポート実行'}
-                  </button>
-                </div>
+          {/* レース結果インポート */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="text-center">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <span className="text-2xl">🏁</span>
               </div>
-          )}
-
-          {step === 'complete' && importResult && (
-            <ImportProgress result={importResult} onClose={handleClose} />
-          )}
-
-          {error && (
-            <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-4">
-              <h4 className="text-sm font-medium text-red-800 mb-2">エラー</h4>
-              <p className="text-sm text-red-700">{error}</p>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">レース結果</h2>
+              <p className="text-gray-600 mb-6">
+                レース結果一覧や大会データをCSV/Excelファイルからインポート
+              </p>
+              <button
+                onClick={() => router.push('/races/import')}
+                className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                レース結果をインポート
+              </button>
             </div>
-          )}
+          </div>
         </div>
 
-        {toast && (
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            onClose={() => setToast(null)}
-          />
-        )}
+        {/* ヘルプ情報 */}
+        <div className="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-blue-900 mb-4">インポートについて</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-blue-800">
+            <div>
+              <h4 className="font-medium mb-2">練習記録インポート</h4>
+              <ul className="space-y-1">
+                <li>• Garmin Connectエクスポート形式に対応</li>
+                <li>• ラップデータの自動解析</li>
+                <li>• 練習種別の自動推定</li>
+                <li>• 心拍数・ペースデータの取得</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">レース結果インポート</h4>
+              <ul className="space-y-1">
+                <li>• カスタムマッピング機能</li>
+                <li>• 駅伝データ対応</li>
+                <li>• 詳細情報（天気・コース等）</li>
+                <li>• レース予定への変換</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

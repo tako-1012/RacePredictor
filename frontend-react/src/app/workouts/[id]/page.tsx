@@ -6,9 +6,71 @@ import { useAuth } from '@/hooks/useAuth'
 import { apiClient, handleApiError } from '@/lib/api'
 import { Workout, WorkoutType } from '@/types'
 import { DetailedWorkoutForm } from '../components/DetailedWorkoutForm'
+import { SessionCard } from '../components/SessionCard'
+import { WorkoutSummary } from '../components/WorkoutSummary'
+import { StatCard } from '../components/StatCard'
+import { SectionSummary } from '../components/SectionSummary'
 import { LoadingSpinner } from '@/components/UI/LoadingSpinner'
 import { Toast } from '@/components/UI/Toast'
+import { Breadcrumb, BreadcrumbPresets } from '@/components/Layout/Breadcrumb'
 import { formatDistance, formatPace, formatTime } from '@/lib/utils'
+
+// Duration format function
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = Math.floor(seconds % 60)
+  return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+}
+
+// Get workout type display name function
+function getWorkoutTypeDisplay(workoutType: any): string {
+  // Object case
+  if (workoutType && typeof workoutType === 'object') {
+    return workoutType.name || workoutType.type || 'Other'
+  }
+  
+  // String case
+  if (typeof workoutType === 'string') {
+    const typeMap: Record<string, string> = {
+      'easy_run': 'イージーラン',
+      'long_run': 'ロング走',
+      'tempo_run': 'テンポ走',
+      'interval': 'インターバル走',
+      'interval_run': 'インターバル走',
+      'repetition': 'レペティション',
+      'fartlek': 'ファートレック',
+      'hill_training': 'ヒルトレーニング',
+      'strength': '筋力トレーニング',
+      'recovery': '回復走',
+      'other': 'その他',
+      'Other': 'その他'
+    }
+    
+    return typeMap[workoutType] || workoutType
+  }
+  
+  return 'Other'
+}
+
+// Infer workout type from session data function
+function inferWorkoutTypeFromSession(sessionData: any): string {
+  if (!sessionData || !Array.isArray(sessionData) || sessionData.length === 0) {
+    return 'Other'
+  }
+  
+  // Infer from first exercise in main section
+  for (const session of sessionData) {
+    if (session.main && session.main.length > 0) {
+      const mainExercise = session.main[0]
+      if (mainExercise.type) {
+        return mainExercise.type
+      }
+    }
+  }
+  
+  return 'Other'
+}
 
 export default function WorkoutDetailPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth()
@@ -42,11 +104,53 @@ export default function WorkoutDetailPage() {
     try {
       setIsLoading(true)
       setError(null)
+      
+      // Debug log
+      console.log('Workout ID:', workoutId)
+      
       const workoutData = await apiClient.getWorkout(workoutId)
-      setWorkout(workoutData)
-    } catch (err) {
-      const apiError = handleApiError(err)
-      setError(apiError.message)
+      
+      // Basic data validation
+      if (!workoutData || typeof workoutData !== 'object') {
+        throw new Error('Invalid data format')
+      }
+      
+      console.log('Retrieved workout data:', workoutData)
+      console.log('times_seconds:', workoutData.times_seconds)
+      console.log('distances_meters:', workoutData.distances_meters)
+      console.log('workout type:', workoutData.workout_type)
+      console.log('session data:', workoutData.session_data)
+      
+      // Workout type fallback processing
+      const processedData = {
+        ...workoutData,
+        workout_type: workoutData.workout_type || 
+                     workoutData.workoutType || 
+                     inferWorkoutTypeFromSession(workoutData.session_data) || 
+                     'Other'
+      }
+      
+      console.log('Processed workout type:', processedData.workout_type)
+      
+      setWorkout(processedData)
+    } catch (err: any) {
+      console.error('Workout retrieval error:', err)
+      
+      let errorMessage = 'Failed to retrieve workout record'
+      
+      if (err.message) {
+        if (err.message.includes('404') || err.message.includes('not found')) {
+          errorMessage = 'Workout record not found'
+        } else if (err.message.includes('403') || err.message.includes('unauthorized')) {
+          errorMessage = 'You do not have permission to access this workout record'
+        } else if (err.message.includes('500') || err.message.includes('server error')) {
+          errorMessage = 'A server error occurred. Please try again later.'
+        } else {
+          errorMessage = err.message
+        }
+      }
+      
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -77,7 +181,7 @@ export default function WorkoutDetailPage() {
   }
 
   const handleDelete = async () => {
-    if (!confirm('この練習記録を削除しますか？この操作は取り消せません。')) return
+    if (!confirm('この練習記録を削除してもよろしいですか？この操作は取り消せません。')) return
 
     try {
       await apiClient.deleteWorkout(workoutId)
@@ -94,21 +198,29 @@ export default function WorkoutDetailPage() {
   }
 
   if (authLoading || isLoading) {
-    return <LoadingSpinner />
+    return (<LoadingSpinner />)
   }
 
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">エラーが発生しました</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">An error occurred</h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={loadWorkout}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            再試行
-          </button>
+          <div className="flex space-x-3 justify-center">
+            <button
+              onClick={loadWorkout}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Retry
+            </button>
+            <button
+              onClick={() => router.back()}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+            >
+              Back
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -118,12 +230,12 @@ export default function WorkoutDetailPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">練習記録が見つかりません</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Workout record not found</h2>
           <button
             onClick={() => router.push('/workouts')}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            練習記録一覧に戻る
+            Back to Workout List
           </button>
         </div>
       </div>
@@ -134,6 +246,10 @@ export default function WorkoutDetailPage() {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6">
+            {BreadcrumbPresets.workoutsEdit(workoutId, workout.workout_name || '練習記録')}
+          </div>
+
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">練習記録を編集</h1>
             <p className="mt-2 text-gray-600">練習の詳細を修正してください</p>
@@ -162,234 +278,195 @@ export default function WorkoutDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">練習記録詳細</h1>
-              <p className="mt-2 text-gray-600">
-                {new Date(workout.date).toLocaleDateString('ja-JP')} - {workout.workout_type?.name || '不明'}
-              </p>
-            </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setIsEditing(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                編集
-              </button>
-              <button
-                onClick={handleDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                削除
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* 基本情報 */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">基本情報</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">日付</label>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {new Date(workout.date).toLocaleDateString('ja-JP')}
-                  </p>
-                </div>
-                {workout.extended_data?.time && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">時刻</label>
-                    <p className="mt-1 text-sm text-gray-900">{workout.extended_data.time}</p>
-                  </div>
-                )}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">練習種別</label>
-                  <p className="mt-1 text-sm text-gray-900">{workout.workout_type?.name || '不明'}</p>
-                </div>
-                {workout.extended_data?.session_count && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">部練習数</label>
-                    <p className="mt-1 text-sm text-gray-900">{workout.extended_data.session_count}部練</p>
-                  </div>
-                )}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">総距離</label>
-                  <p className="mt-1 text-sm text-gray-900">{formatDistance(workout.distance_meters)}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">強度</label>
-                  <p className="mt-1 text-sm text-gray-900">{workout.intensity}/10</p>
-                </div>
-              </div>
-            </div>
-
-            {/* タイム情報 */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">タイム情報</h2>
-              <div className="space-y-3">
-                {workout.times_seconds.length > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">区間タイム</label>
-                    <div className="mt-1 space-y-1">
-                      {workout.times_seconds.map((time, index) => (
-                        <p key={index} className="text-sm text-gray-900">
-                          区間 {index + 1}: {formatTime(time)}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">合計時間</label>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {formatTime(workout.times_seconds.reduce((total, time) => total + time, 0))}
-                  </p>
-                </div>
-                {workout.avg_pace_seconds && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">平均ペース</label>
-                    <p className="mt-1 text-sm text-gray-900">{formatPace(workout.avg_pace_seconds)}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 心拍数情報 */}
-            {(workout.avg_heart_rate || workout.max_heart_rate) && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">心拍数情報</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {workout.avg_heart_rate && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">平均心拍数</label>
-                      <p className="mt-1 text-sm text-gray-900">{workout.avg_heart_rate} bpm</p>
-                    </div>
-                  )}
-                  {workout.max_heart_rate && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">最大心拍数</label>
-                      <p className="mt-1 text-sm text-gray-900">{workout.max_heart_rate} bpm</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* メモ */}
-            {workout.notes && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">メモ</h2>
-                <p className="text-sm text-gray-900 whitespace-pre-wrap">{workout.notes}</p>
-              </div>
-            )}
-          </div>
-
-          {/* 詳細情報 */}
-          <div className="space-y-6">
-            {/* セッション情報 */}
-            {workout.extended_data?.session_period && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">セッション情報</h2>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">時間帯</label>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {workout.extended_data.session_period === 'morning' && '朝練 (6:00-9:00)'}
-                    {workout.extended_data.session_period === 'afternoon' && '午後練 (13:00-16:00)'}
-                    {workout.extended_data.session_period === 'evening' && '夕練 (16:00-19:00)'}
-                    {workout.extended_data.session_period === 'night' && '夜練 (19:00-22:00)'}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* 構成要素 */}
-            {(workout.extended_data?.warmup_distance || workout.extended_data?.main_distance || workout.extended_data?.cooldown_distance) && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">構成要素</h2>
-                <div className="space-y-4">
-                  {workout.extended_data?.warmup_distance && (
-                    <div>
-                      <h3 className="font-medium text-gray-800">ウォームアップ</h3>
-                      <div className="ml-4 space-y-1">
-                        <p className="text-sm text-gray-600">
-                          距離: {formatDistance(workout.extended_data.warmup_distance)}
-                        </p>
-                        {workout.extended_data.warmup_time && (
-                          <p className="text-sm text-gray-600">
-                            時間: {formatTime(workout.extended_data.warmup_time)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {workout.extended_data?.main_distance && (
-                    <div>
-                      <h3 className="font-medium text-gray-800">メイン</h3>
-                      <div className="ml-4 space-y-1">
-                        <p className="text-sm text-gray-600">
-                          距離: {formatDistance(workout.extended_data.main_distance)}
-                        </p>
-                        {workout.extended_data.main_time && (
-                          <p className="text-sm text-gray-600">
-                            時間: {formatTime(workout.extended_data.main_time)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {workout.extended_data?.cooldown_distance && (
-                    <div>
-                      <h3 className="font-medium text-gray-800">クールダウン</h3>
-                      <div className="ml-4 space-y-1">
-                        <p className="text-sm text-gray-600">
-                          距離: {formatDistance(workout.extended_data.cooldown_distance)}
-                        </p>
-                        {workout.extended_data.cooldown_time && (
-                          <p className="text-sm text-gray-600">
-                            時間: {formatTime(workout.extended_data.cooldown_time)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* 統計情報 */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">統計情報</h2>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">作成日時</span>
-                  <span className="text-sm text-gray-900">
-                    {new Date(workout.created_at).toLocaleString('ja-JP')}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">更新日時</span>
-                  <span className="text-sm text-gray-900">
-                    {new Date(workout.updated_at).toLocaleString('ja-JP')}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {toast && (
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            onClose={() => setToast(null)}
-          />
-        )}
+    <div className="max-w-4xl mx-auto p-6">
+      {/* Breadcrumb Navigation */}
+      <div className="mb-4">
+        {BreadcrumbPresets.workoutsDetail(workoutId, workout.workout_name || 'Workout')}
       </div>
+
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {workout.workout_name || '練習記録'}
+          </h1>
+          <p className="text-gray-600">
+            {(workout.date || workout.workout_date) ? 
+              new Date(workout.date || workout.workout_date).toLocaleDateString('ja-JP') : 
+              '日付不明'
+            } • {getWorkoutTypeDisplay(workout.workout_type)}
+          </p>
+        </div>
+        <div className="flex space-x-3">
+          <button
+            onClick={() => setIsEditing(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            編集
+          </button>
+          <button
+            onClick={handleDelete}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          >
+            削除
+          </button>
+        </div>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <StatCard 
+          title="総距離" 
+          value={(() => {
+            const distance = workout.actual_distance_meters || workout.target_distance_meters || workout.distance_meters || 0
+            return distance > 0 ? formatDistance(distance) : '0m'
+          })()}
+          color="blue" 
+        />
+        <StatCard 
+          title="総時間" 
+          value={(() => {
+            if (workout.duration_seconds) {
+              return formatDuration(workout.duration_seconds)
+            }
+            if (workout.actual_times_seconds && workout.actual_times_seconds.length > 0) {
+              return formatTime(workout.actual_times_seconds.reduce((total, time) => total + time, 0))
+            }
+            if (workout.times_seconds && workout.times_seconds.length > 0) {
+              return formatTime(workout.times_seconds.reduce((total, time) => total + time, 0))
+            }
+            return '--:--'
+          })()}
+          color="green" 
+        />
+        <StatCard 
+          title="平均ペース" 
+          value={(() => {
+            const distance = workout.actual_distance_meters || workout.target_distance_meters || workout.distance_meters || 0
+            const time = workout.duration_seconds || 
+                        (workout.actual_times_seconds ? workout.actual_times_seconds.reduce((a, b) => a + b, 0) : 0) ||
+                        (workout.times_seconds ? workout.times_seconds.reduce((a, b) => a + b, 0) : 0)
+            
+            if (distance > 0 && time > 0) {
+              return formatPace(time / (distance / 1000), distance)
+            }
+            return '--:--'
+          })()}
+          color="purple" 
+        />
+        <StatCard 
+          title="強度" 
+          value={workout.intensity ? `${workout.intensity}/10` : '未設定'}
+          color="orange" 
+        />
+      </div>
+
+      {/* Session Information */}
+      <div className="space-y-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">
+              練習詳細
+            </h3>
+            <div className="text-sm text-gray-500">
+              {getWorkoutTypeDisplay(workout.workout_type_name || workout.workout_type || 'Other')}
+            </div>
+          </div>
+
+          {/* Workout data display */}
+          <div className="space-y-4">
+            {workout.notes && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-2">メモ</h4>
+                <p className="text-gray-700">{workout.notes}</p>
+              </div>
+            )}
+
+            {/* Distance and time details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-blue-50 rounded-lg p-4">
+                <h4 className="font-medium text-blue-900 mb-2">距離情報</h4>
+                <div className="space-y-1 text-sm">
+                  <div>実際の距離: {formatDistance(workout.actual_distance_meters || 0)}</div>
+                  <div>目標距離: {formatDistance(workout.target_distance_meters || 0)}</div>
+                </div>
+              </div>
+              
+              <div className="bg-green-50 rounded-lg p-4">
+                <h4 className="font-medium text-green-900 mb-2">時間情報</h4>
+                <div className="space-y-1 text-sm">
+                  {workout.actual_times_seconds && workout.actual_times_seconds.length > 0 && (
+                    <div>実際の時間: {workout.actual_times_seconds.map(time => formatTime(time)).join(', ')}</div>
+                  )}
+                  {workout.target_times_seconds && workout.target_times_seconds.length > 0 && (
+                    <div>目標時間: {workout.target_times_seconds.map(time => formatTime(time)).join(', ')}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Warmup */}
+            {workout.extended_data?.warmup_distance && (
+              <SectionSummary 
+                title="Warmup" 
+                icon="🔥" 
+                color="orange"
+                steps={[{
+                  type: 'Warmup',
+                  distance: workout.extended_data.warmup_distance / 1000,
+                  time: workout.extended_data.warmup_time ? workout.extended_data.warmup_time / 60 : 0
+                }]} 
+              />
+            )}
+
+            {/* Main */}
+            {workout.extended_data?.main_distance && (
+              <SectionSummary 
+                title="Main" 
+                icon="💪" 
+                color="blue"
+                steps={[{
+                  type: 'Main',
+                  distance: workout.extended_data.main_distance / 1000,
+                  time: workout.extended_data.main_time ? workout.extended_data.main_time / 60 : 0
+                }]} 
+              />
+            )}
+
+            {/* Cooldown */}
+            {workout.extended_data?.cooldown_distance && (
+              <SectionSummary 
+                title="Cooldown" 
+                icon="🧘" 
+                color="green"
+                steps={[{
+                  type: 'Cooldown',
+                  distance: workout.extended_data.cooldown_distance / 1000,
+                  time: workout.extended_data.cooldown_time ? workout.extended_data.cooldown_time / 60 : 0
+                }]} 
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Notes */}
+      {workout.notes && (
+        <div className="mt-6 bg-gray-50 rounded-lg p-4">
+          <h3 className="font-medium text-gray-900 mb-2">メモ</h3>
+          <p className="text-gray-700">{workout.notes}</p>
+        </div>
+      )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   )
 }

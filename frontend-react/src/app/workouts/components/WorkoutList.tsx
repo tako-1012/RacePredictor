@@ -5,6 +5,88 @@ import { useRouter } from 'next/navigation'
 import { Workout, WorkoutFilter } from '@/types'
 import { formatDistance, formatPace, formatTime } from '@/lib/utils'
 import { ConfirmDialog } from '@/components/UI/ConfirmDialog'
+import { ResponsiveTable, createTableColumns } from '@/components/UI/ResponsiveTable'
+
+// Durationフォーマット関数
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = Math.floor(seconds % 60)
+  return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+}
+
+// 日付の有効性をチェックする関数
+function isValidDate(dateString: string): boolean {
+  if (!dateString) return false
+  const date = new Date(dateString)
+  const currentYear = new Date().getFullYear()
+  return date instanceof Date && !isNaN(date.getTime()) && 
+         date.getFullYear() >= 1900 && date.getFullYear() <= currentYear + 10
+}
+
+// 数値の有効性をチェックする関数
+function isValidNumber(value: string, min: number = 0, max: number = 999999): boolean {
+  const num = parseFloat(value)
+  return !isNaN(num) && num >= min && num <= max
+}
+
+// 時間の有効性をチェックする関数（24時間以内）
+function isValidTime(hours: number, minutes: number = 0, seconds: number = 0): boolean {
+  const totalSeconds = hours * 3600 + minutes * 60 + seconds
+  return totalSeconds >= 0 && totalSeconds <= 86400 // 24時間 = 86400秒
+}
+
+// ワークアウトタイプの表示名を日本語に変換する関数
+function getWorkoutTypeDisplayName(typeName: string): string {
+  const typeMap: Record<string, string> = {
+    // 持久系練習
+    'easy_run': 'イージーラン',
+    'long_run': 'ロング走',
+    'medium_run': 'ミディアムラン',
+    'tempo_run': 'テンポ走',
+    
+    // スピード・強度系練習
+    'interval': 'インターバル走',
+    'interval_run': 'インターバル走',
+    'repetition': 'レペティション',
+    'build_up': 'ビルドアップ走',
+    'fartlek': 'ファルトレク',
+    'pace_change': '変化走',
+    
+    // 特殊練習
+    'hill_training': '坂道練習',
+    'hill_run': '坂道練習',
+    'stair_run': '階段練習',
+    'sand_run': '砂浜・芝生走',
+    
+    // ウォームアップ
+    'jogging': 'ジョギング',
+    'walking': 'ウォーキング',
+    'marching': 'その場足踏み',
+    'movement_prep': '動き作り',
+    'ladder': 'ラダートレーニング',
+    'flow_run': '流し',
+    'wind_sprint': 'ウィンドスプリント',
+    'dynamic_stretch': '動的ストレッチ',
+    'brazil_warmup': 'ブラジル体操',
+    'joint_mobility': '関節体操',
+    'balance_coordination': 'バランス・コーディネーション',
+    'muscle_activation': '筋活性化エクササイズ',
+    'plyometrics': 'プライオメトリクス',
+    'core_training': 'コアトレーニング',
+    
+    // クールダウン
+    'cooldown': 'クールダウン',
+    
+    // その他
+    'strength': '筋力トレーニング',
+    'recovery': '回復走',
+    'other': 'その他',
+    'その他': 'その他'
+  }
+  
+  return typeMap[typeName] || typeName
+}
 
 interface WorkoutListProps {
   workouts: Workout[]
@@ -56,8 +138,8 @@ export function WorkoutList({
   }
 
   const getSortIcon = (sortBy: string) => {
-    const currentSort = pagination.sort_by || 'date'
-    const currentOrder = pagination.sort_order || 'desc'
+    const currentSort = pagination?.sort_by || 'date'
+    const currentOrder = pagination?.sort_order || 'desc'
     
     if (currentSort !== sortBy) return '↕️'
     return currentOrder === 'asc' ? '↑' : '↓'
@@ -85,8 +167,13 @@ export function WorkoutList({
               </label>
               <input
                 type="date"
-                value={filter.date_from || ''}
-                onChange={(e) => onFilterChange({ ...filter, date_from: e.target.value })}
+                value={filter.date_from && isValidDate(filter.date_from) ? filter.date_from : ''}
+                onChange={(e) => {
+                  const value = e.target.value
+                  if (value === '' || isValidDate(value)) {
+                    onFilterChange({ ...filter, date_from: value })
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -96,8 +183,13 @@ export function WorkoutList({
               </label>
               <input
                 type="date"
-                value={filter.date_to || ''}
-                onChange={(e) => onFilterChange({ ...filter, date_to: e.target.value })}
+                value={filter.date_to && isValidDate(filter.date_to) ? filter.date_to : ''}
+                onChange={(e) => {
+                  const value = e.target.value
+                  if (value === '' || isValidDate(value)) {
+                    onFilterChange({ ...filter, date_to: value })
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -107,8 +199,16 @@ export function WorkoutList({
               </label>
               <input
                 type="number"
+                min="0"
+                max="1000"
+                step="0.1"
                 value={filter.distance_min || ''}
-                onChange={(e) => onFilterChange({ ...filter, distance_min: e.target.value ? Number(e.target.value) * 1000 : undefined })}
+                onChange={(e) => {
+                  const value = e.target.value
+                  if (value === '' || isValidNumber(value, 0, 1000)) {
+                    onFilterChange({ ...filter, distance_min: value ? Number(value) * 1000 : undefined })
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -118,8 +218,16 @@ export function WorkoutList({
               </label>
               <input
                 type="number"
+                min="0"
+                max="1000"
+                step="0.1"
                 value={filter.distance_max || ''}
-                onChange={(e) => onFilterChange({ ...filter, distance_max: e.target.value ? Number(e.target.value) * 1000 : undefined })}
+                onChange={(e) => {
+                  const value = e.target.value
+                  if (value === '' || isValidNumber(value, 0, 1000)) {
+                    onFilterChange({ ...filter, distance_max: value ? Number(value) * 1000 : undefined })
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -170,43 +278,83 @@ export function WorkoutList({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {workouts.map((workout) => (
+              {workouts.map((workout) => {
+                // デバッグ用: データ構造をコンソールに出力
+                console.log('Workout data:', workout)
+                
+                return (
                 <tr key={workout.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(workout.date).toLocaleDateString('ja-JP')}
+                    {(workout.date || workout.workout_date) ? (
+                      new Date(workout.date || workout.workout_date).toLocaleDateString('ja-JP', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                      })
+                    ) : (
+                      <span className="text-gray-400">日付不明</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {workout.workout_type?.name || '不明'}
+                    {workout.workout_type_name || workout.workout_type?.name || workout.workout_type ? 
+                      getWorkoutTypeDisplayName(workout.workout_type_name || workout.workout_type?.name || workout.workout_type) : 
+                      <span className="text-gray-400">種別不明</span>
+                    }
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatDistance(workout.distance_meters)}
+                    {(() => {
+                      const distance = workout.actual_distance_meters || workout.target_distance_meters || workout.distance_meters || 0
+                      return distance > 0 ? formatDistance(distance) : '距離不明'
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {workout.times_seconds.length > 0 ? (
+                    {workout.duration_seconds ? (
                       <div className="space-y-1">
-                        <div>合計: {formatTime(workout.times_seconds.reduce((a, b) => a + b, 0))}</div>
-                        {workout.times_seconds.length > 1 && (
+                        <div>合計: {formatDuration(workout.duration_seconds)}</div>
+                        {(workout.actual_times_seconds || workout.target_times_seconds) && 
+                         (workout.actual_times_seconds || workout.target_times_seconds).length > 1 && (
                           <div className="text-xs text-gray-500">
-                            {workout.times_seconds.length}分割
+                            {(workout.actual_times_seconds || workout.target_times_seconds).length}分割
+                          </div>
+                        )}
+                      </div>
+                    ) : workout.actual_times_seconds && workout.actual_times_seconds.length > 0 ? (
+                      <div className="space-y-1">
+                        <div>合計: {formatDuration(workout.actual_times_seconds.reduce((a, b) => a + b, 0))}</div>
+                        {workout.actual_times_seconds.length > 1 && (
+                          <div className="text-xs text-gray-500">
+                            {workout.actual_times_seconds.length}分割
                           </div>
                         )}
                       </div>
                     ) : (
-                      '-'
+                      '記録なし'
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {workout.avg_pace_seconds ? formatPace(workout.avg_pace_seconds, workout.distance_meters) : '-'}
+                    {(() => {
+                      const distance = workout.actual_distance_meters || workout.target_distance_meters || 0
+                      const time = workout.duration_seconds || (workout.actual_times_seconds ? workout.actual_times_seconds.reduce((a, b) => a + b, 0) : 0)
+                      
+                      if (distance > 0 && time > 0) {
+                        return formatPace(time / (distance / 1000), distance)
+                      }
+                      return '計算不可'
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      workout.intensity >= 8 ? 'bg-red-100 text-red-800' :
-                      workout.intensity >= 6 ? 'bg-orange-100 text-orange-800' :
-                      workout.intensity >= 4 ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {workout.intensity}/10
-                    </span>
+                    {workout.intensity ? (
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        workout.intensity >= 8 ? 'bg-red-100 text-red-800' :
+                        workout.intensity >= 6 ? 'bg-orange-100 text-orange-800' :
+                        workout.intensity >= 4 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {workout.intensity}/10
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 text-sm">未設定</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
@@ -225,7 +373,8 @@ export function WorkoutList({
                     </div>
                   </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -259,7 +408,7 @@ export function WorkoutList({
                 <div>
                   <p className="text-xs text-gray-500">タイム</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {workout.times_seconds.length > 0 ? formatTime(workout.times_seconds.reduce((a, b) => a + b, 0)) : '-'}
+                    {workout.duration_seconds ? formatDuration(workout.duration_seconds) : '-'}
                   </p>
                 </div>
                 <div>
@@ -271,7 +420,7 @@ export function WorkoutList({
                 <div>
                   <p className="text-xs text-gray-500">区間数</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {workout.times_seconds.length > 0 ? `${workout.times_seconds.length}分割` : '-'}
+                    {workout.times_seconds && workout.times_seconds.length > 0 ? `${workout.times_seconds.length}分割` : '-'}
                   </p>
                 </div>
               </div>

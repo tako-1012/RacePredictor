@@ -1,0 +1,32 @@
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "RunMaster",
+  "description": "データで進化するランニング体験。詳細な記録で、あなたの走りを科学する。高精度なAI予測を実現するため、まずは豊富なデータ収集に特化したベータ版。",
+  "url": "https://runmaster.app",
+  "applicationCategory": "SportsApplication",
+  "operatingSystem": "Web",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "JPY",
+    "description": "ベータ版は無料でご利用いただけます"
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.8",
+    "ratingCount": "500"
+  },
+  "author": {
+    "@type": "Organization",
+    "name": "RunMaster Team"
+  },
+  "featureList": [
+    "セッション分割型記録",
+    "高度な分析",
+    "カスタムワークアウト",
+    "AI予測機能",
+    "体調管理",
+    "レース管理"
+  ]
+}

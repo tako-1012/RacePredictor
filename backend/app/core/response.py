@@ -17,7 +17,7 @@ from app.schemas.common import (
     ValidationErrorResponse,
     ValidationErrorDetail
 )
-from app.core.exceptions import RacePredictorException, ValidationError
+from app.core.exceptions import RunMasterException, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +103,7 @@ def handle_exception_response(
     request_id: Optional[str] = None
 ) -> ErrorResponse:
     """例外からエラーレスポンスを作成"""
-    if isinstance(exc, RacePredictorException):
+    if isinstance(exc, RunMasterException):
         return ErrorResponse(
             error=exc.error_type,
             message=exc.message,

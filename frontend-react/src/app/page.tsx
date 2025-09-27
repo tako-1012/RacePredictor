@@ -4,20 +4,31 @@ import { useAuth } from '@/hooks/useAuth'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { LoadingSpinner } from '@/components/UI/LoadingSpinner'
+import LandingPage from '@/components/landing/LandingPage'
 
 export default function HomePage() {
   const { isLoading, isAuthenticated } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (!isLoading) {
-      if (isAuthenticated) {
-        router.push('/dashboard')
-      } else {
-        router.push('/login')
-      }
+    if (!isLoading && isAuthenticated) {
+      console.log('User is authenticated, redirecting to dashboard')
+      router.push('/dashboard')
+    } else if (!isLoading && !isAuthenticated) {
+      console.log('User is not authenticated, showing landing page')
     }
-  }, [isLoading, isAuthenticated, router])
+  }, [isAuthenticated, isLoading, router])
 
-  return <LoadingSpinner />
+  if (isLoading) {
+    console.log('Loading authentication state...')
+    return <LoadingSpinner />
+  }
+
+  if (isAuthenticated) {
+    console.log('User is authenticated, showing loading while redirecting...')
+    return <LoadingSpinner />
+  }
+
+  console.log('User is not authenticated, showing landing page')
+  return <LandingPage />
 }

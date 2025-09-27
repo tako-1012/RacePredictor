@@ -5,9 +5,9 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { useRouter } from 'next/navigation';
-import WorkoutList from '@/app/workouts/components/WorkoutList';
-import WorkoutForm from '@/app/workouts/components/WorkoutForm';
-import DetailedWorkoutForm from '@/app/workouts/components/DetailedWorkoutForm';
+import { WorkoutList } from '@/app/workouts/components/WorkoutList';
+import { WorkoutForm } from '@/app/workouts/components/WorkoutForm';
+import { DetailedWorkoutForm } from '@/app/workouts/components/DetailedWorkoutForm';
 
 // Next.js router のモック
 jest.mock('next/navigation', () => ({
@@ -30,6 +30,29 @@ jest.mock('@/lib/api', () => ({
 describe('練習記録コンポーネントテスト', () => {
   const mockPush = jest.fn();
   const mockApi = require('@/lib/api').api;
+  
+  const mockWorkouts = [
+    {
+      id: '1',
+      date: '2024-01-15',
+      workout_type: 'easy_run',
+      distance_meters: 5000,
+      duration_seconds: 1800,
+      pace_per_km: 360,
+      heart_rate_avg: 140,
+      notes: 'テスト練習1'
+    },
+    {
+      id: '2',
+      date: '2024-01-16',
+      workout_type: 'interval',
+      distance_meters: 8000,
+      duration_seconds: 2400,
+      pace_per_km: 300,
+      heart_rate_avg: 150,
+      notes: 'テスト練習2'
+    }
+  ];
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -39,28 +62,6 @@ describe('練習記録コンポーネントテスト', () => {
   });
 
   describe('WorkoutList', () => {
-    const mockWorkouts = [
-      {
-        id: '1',
-        date: '2024-01-15',
-        workout_type: 'easy_run',
-        distance_meters: 5000,
-        duration_seconds: 1800,
-        pace_per_km: 360,
-        heart_rate_avg: 140,
-        notes: 'テスト練習1'
-      },
-      {
-        id: '2',
-        date: '2024-01-16',
-        workout_type: 'interval',
-        distance_meters: 8000,
-        duration_seconds: 2400,
-        pace_per_km: 300,
-        heart_rate_avg: 150,
-        notes: 'テスト練習2'
-      }
-    ];
 
     it('練習記録一覧が正しくレンダリングされる', async () => {
       mockApi.workouts.getAll.mockResolvedValue({
